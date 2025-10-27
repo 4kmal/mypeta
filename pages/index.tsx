@@ -56,7 +56,7 @@ const Home = () => {
                 </div>
               )}
               <h1 className='ml-8 text-xl font-mono uppercase font-bold text-center text-zinc-800 dark:text-zinc-200'>
-                Data Malaysia
+                My Peta
               </h1>
             </div>
           <ThemeToggleButton />

@@ -5,7 +5,7 @@ const Header = () => {
   return (
     <>
       <h1 className='text-4xl lg:text-8xl font-bold text-center mb-4 text-zinc-800'>
-        Data Malaysia
+        My Peta
       </h1>
       <div className='mb-12'>
         <motion.div className="relative mx-4 my-4 flex items-center justify-center gap-4 text-center sm:mx-0 sm:mb-0">
