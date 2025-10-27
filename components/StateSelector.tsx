@@ -62,7 +62,7 @@ const StateSelectorDialog = ({ selectedState, onStateChange }: StateSelectorDial
               variant={selectedState === state.id ? "default" : "outline"}
               className={`border-0 h-auto px-3 py-2 transition-all duration-200 shadow-md ${
                 selectedState === state.id 
-                  ? "bg-sky-600 dark:bg-sky-600 text-white hover:bg-sky-700 dark:hover:bg-sky-500 border-zinc-900 dark:border-sky-500" 
+                  ? "bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-500 dark:to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 dark:hover:from-blue-600 dark:hover:to-blue-700" 
                   : "bg-white dark:bg-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-600 border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100"
               }`}
               onClick={() => handleStateSelect(state.id)}
