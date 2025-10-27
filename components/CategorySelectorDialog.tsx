@@ -37,7 +37,7 @@ const CategorySelectorDialog = ({ selectedCategory, onCategoryChange }: Category
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="border-0 shadow-md w-full justify-between p-6 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700">
+        <Button variant="outline" className="border-0 shadow-md w-full justify-between p-6 rounded-xl bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-700">
           <span className="flex items-center gap-2">
             {selectedCategoryData?.label}
           </span>
@@ -57,10 +57,10 @@ const CategorySelectorDialog = ({ selectedCategory, onCategoryChange }: Category
           </svg>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md bg-gray-100 dark:bg-gray-800">
+      <DialogContent className="sm:max-w-md bg-zinc-100 dark:bg-zinc-800">
         <DialogHeader>
-          <DialogTitle className="text-gray-900 dark:text-gray-100">Select Data Category</DialogTitle>
-          <DialogDescription className="text-gray-600 dark:text-gray-400">
+          <DialogTitle className="text-zinc-900 dark:text-zinc-100">Select Data Category</DialogTitle>
+          <DialogDescription className="text-zinc-600 dark:text-zinc-400">
             Choose a data category to visualize on the map
           </DialogDescription>
         </DialogHeader>
@@ -71,8 +71,8 @@ const CategorySelectorDialog = ({ selectedCategory, onCategoryChange }: Category
               variant={selectedCategory === category.id ? "default" : "outline"}
               className={`border-0 justify-start h-auto p-4 transition-all duration-200 shadow-md ${
                 selectedCategory === category.id 
-                  ? "bg-sky-600 dark:bg-sky-600 text-white hover:bg-sky-700 dark:hover:bg-sky-500 border-gray-900 dark:border-sky-500" 
-                  : "bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
+                  ? "bg-sky-600 dark:bg-sky-600 text-white hover:bg-sky-700 dark:hover:bg-sky-500 border-zinc-900 dark:border-sky-500" 
+                  : "bg-white dark:bg-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-600 border-zinc-300 dark:border-zinc-600 text-zinc-900 dark:text-zinc-100"
               }`}
               onClick={() => handleCategorySelect(category.id)}
             >
@@ -80,8 +80,8 @@ const CategorySelectorDialog = ({ selectedCategory, onCategoryChange }: Category
                 <span className="text-base font-medium">{category.label}</span>
                 <span className={`text-xs ${
                   selectedCategory === category.id 
-                    ? "text-gray-300 dark:text-sky-100" 
-                    : "text-muted-foreground dark:text-gray-400"
+                    ? "text-zinc-300 dark:text-sky-100" 
+                    : "text-muted-foreground dark:text-zinc-400"
                 }`}>
                   {category.description}
                 </span>

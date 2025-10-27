@@ -13,7 +13,7 @@ interface MalaysiaMapProps {
 
 const MalaysiaMap = ({ activeState, selectedCategory, onStateChange, getStateData, showMapLegend = false }: MalaysiaMapProps) => {
   return (
-    <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 pt-16 lg:pt-8 flex flex-col justify-center items-center">
+    <div className="relative bg-white dark:bg-zinc-900 rounded-xl shadow-lg p-8 pt-16 lg:pt-8 flex flex-col justify-center items-center">
       {/* State name and data display */}
       <div className="absolute top-0 lg:top-20 text-center min-h-[100px] flex flex-col items-center justify-center">
         {activeState ? (
@@ -25,8 +25,8 @@ const MalaysiaMap = ({ activeState, selectedCategory, onStateChange, getStateDat
               const stateName = states.find(s => s.id === activeState)?.name || '';
               const data = getStateData(stateName, selectedCategory);
               return data ? (
-                <div className="text-xs lg:text-2xl text-gray-700 dark:text-gray-300">
-                  <div className="font-semibold text-gray-500 dark:text-gray-400 text-xs lg:text-base mb-1">
+                <div className="text-xs lg:text-2xl text-zinc-700 dark:text-zinc-300">
+                  <div className="font-semibold text-zinc-500 dark:text-zinc-400 text-xs lg:text-base mb-1">
                     {getCategoryLabel(selectedCategory)}
                   </div>
                   <div className="font-bold text-sky-600 dark:text-sky-400">
@@ -34,14 +34,14 @@ const MalaysiaMap = ({ activeState, selectedCategory, onStateChange, getStateDat
                   </div>
                 </div>
               ) : (
-                <div className="text-sm lg:text-base text-gray-500 dark:text-gray-400">
+                <div className="text-sm lg:text-base text-zinc-500 dark:text-zinc-400">
                   Loading data...
                 </div>
               );
             })()}
           </div>
         ) : (
-          <div className="tracking-wide font-bold text-gray-400 dark:text-gray-500 mb-2">
+          <div className="tracking-wide font-bold text-zinc-400 dark:text-zinc-500 mb-2">
             Hover over a state or select one...
           </div>
         )}
@@ -67,8 +67,8 @@ const MalaysiaMap = ({ activeState, selectedCategory, onStateChange, getStateDat
                   className={`transition-all duration-200 cursor-pointer hover:fill-sky-500 dark:hover:fill-sky-400 ${
                     isActive 
                       ? 'dark:fill-sky-500' 
-                      : 'dark:fill-gray-600'
-                  } dark:stroke-gray-400`}
+                      : 'dark:fill-zinc-600'
+                  } dark:stroke-zinc-400`}
                   onMouseEnter={() => onStateChange(state.id)}
                   onMouseLeave={() => { }} // Don't clear state on mouse leave
                 />

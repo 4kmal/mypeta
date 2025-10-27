@@ -32,7 +32,7 @@ const ChartSection = ({
   };
 
   return (
-    <div className="mt-4 bg-white dark:bg-gray-800 rounded-3xl shadow-lg p-8">
+    <div className="mt-4 bg-white dark:bg-zinc-800 rounded-3xl shadow-lg p-8">
       {/* Single Chart Display */}
       <div className="max-w-4xl mx-auto">
         <DataChart

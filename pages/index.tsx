@@ -22,12 +22,15 @@ const Home = () => {
 
   const [isProMode, setIsProMode] = useState(false);
 
-  return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-950 pb-12">
+  const darkColor = 'oklch(18.1% 0.005 285.823)';
 
-      <div className='bg-white dark:bg-gray-800 mx-auto'>
+  return (
+    <div className="min-h-screen bg-zinc-100 dark:bg-[${darkColor}] pb-12"
+      style={{ backgroundColor: darkColor }}>
+
+      <div className='bg-white dark:bg-zinc-900 mx-auto'>
         <div className='flex items-center justify-between max-w-6xl mx-auto p-4'>
-          <h1 className='text-xl tracking-widest uppercase font-bold text-center text-gray-800 dark:text-gray-200'>
+          <h1 className='text-xl tracking-widest uppercase font-bold text-center text-zinc-800 dark:text-zinc-200'>
             Data Malaysia
           </h1>
           <ThemeToggleButton />
@@ -38,11 +41,11 @@ const Home = () => {
 
         {/* Mode Toggle */}
         <div className="flex justify-center mb-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-1 shadow-md border-0 relative">
+          <div className="bg-white dark:bg-zinc-900 rounded-lg p-1 shadow-md border-0 relative">
             <div className="flex relative">
               {/* Sliding Background */}
               <motion.div
-                className="absolute top-0 left-0 bg-sky-500 dark:bg-gray-900 rounded-md shadow-sm"
+                className="absolute top-0 left-0 bg-sky-500 dark:bg-zinc-950 rounded-md shadow-sm"
                 initial={false}
                 animate={{
                   x: isProMode ? '100%' : '0%',
@@ -61,8 +64,8 @@ const Home = () => {
               <button
                 onClick={() => setIsProMode(false)}
                 className={`relative z-10 cursor-pointer px-8 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${!isProMode
-                    ? 'text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                  ? 'text-white'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
                   }`}
               >
                 Basic
@@ -70,8 +73,8 @@ const Home = () => {
               <button
                 onClick={() => setIsProMode(true)}
                 className={`pr-9 text-center relative z-10 cursor-pointer px-8 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${isProMode
-                    ? 'text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'
+                  ? 'text-white'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
                   }`}
               >
                 Pro
@@ -113,6 +116,15 @@ const Home = () => {
         )}
 
         <Footer />
+
+        {/* Footer Branding */}
+        <div className="flex lg:justify-end justify-center mt-8 lg:-mt-12">
+          <div className="border-2 border-x-0 border-white/10 rounded-full p-2 px-6 bg-white/5">
+            <p className="text-xs text-white font-bold tracking-wide">
+              POWERED BY <span className="text-orange-400 italic">RAPID</span>SCREEN
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import { LayoutTextFlip } from '@/components/ui/layout-text-flip';
 const Header = () => {
   return (
     <>
-      <h1 className='text-4xl lg:text-8xl font-bold text-center mb-4 text-gray-800'>
+      <h1 className='text-4xl lg:text-8xl font-bold text-center mb-4 text-zinc-800'>
         Data Malaysia
       </h1>
       <div className='mb-12'>
