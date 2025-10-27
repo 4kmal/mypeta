@@ -17,7 +17,7 @@ const MalaysiaMap = ({ activeState, selectedCategory, onStateChange, getStateDat
       {/* State name and data display */}
       <div className="absolute top-0 lg:top-20 text-center min-h-[100px] flex flex-col items-center justify-center">
         {activeState ? (
-          <div className="animate-fade-in">
+          <div key={activeState} className="animate-fade-in">
             <div className="text-xl lg:text-4xl font-bold text-sky-600 dark:text-sky-400 mb-0 lg:mb-2">
               {states.find(s => s.id === activeState)?.name}
             </div>
@@ -96,7 +96,7 @@ const MalaysiaMap = ({ activeState, selectedCategory, onStateChange, getStateDat
           }
         }
         .animate-fade-in {
-          animation: fade-in 0.2s ease-out;
+          animation: fade-in 0.5s ease-out;
         }
       `}</style>
     </div>
