@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 
 interface DataChartProps {
   data: any[];
@@ -24,7 +24,13 @@ const DataChart = memo(({ data, dataKey, color, title, description }: DataChartP
           color: color,
         },
       }} className="h-[300px] w-full">
-        <BarChart data={data} accessibilityLayer>
+        <AreaChart data={data} accessibilityLayer>
+          <defs>
+            <linearGradient id={`gradient-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.6} />
+              <stop offset="100%" stopColor={color} stopOpacity={0.2} />
+            </linearGradient>
+          </defs>
           <CartesianGrid vertical={false} />
           <XAxis
             dataKey="date"
@@ -38,12 +44,14 @@ const DataChart = memo(({ data, dataKey, color, title, description }: DataChartP
           />
           <YAxis />
           <ChartTooltip content={<ChartTooltipContent />} />
-          <Bar
+          <Area
+            type="monotone"
             dataKey={dataKey}
-            fill={`var(--color-${dataKey})`}
-            radius={4}
+            stroke={color}
+            fill={`url(#gradient-${dataKey})`}
+            strokeWidth={2}
           />
-        </BarChart>
+        </AreaChart>
       </ChartContainer>
     </CardContent>
   </Card>

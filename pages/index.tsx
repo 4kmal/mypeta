@@ -7,7 +7,8 @@ import Footer from '@/components/Footer';
 import FooterBranding from '@/components/FooterBranding';
 import ThemeToggleButton from '@/components/ThemeToggleButton';
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Lottie from 'lottie-react';
 
 const Home = () => {
   const {
@@ -22,17 +23,42 @@ const Home = () => {
   } = useData();
 
   const [isProMode, setIsProMode] = useState(false);
+  const [globeAnimation, setGlobeAnimation] = useState<any>(null);
+
+  useEffect(() => {
+    fetch('/lottie/globe.json')
+      .then(response => response.json())
+      .then(data => setGlobeAnimation(data));
+  }, []);
+
+  // Map category to colors
+  const CATEGORY_COLORS: Record<string, string> = {
+    income_median: '#3b82f6',
+    population: '#10b981',
+    crime: '#ef4444',
+    water_consumption: '#06b6d4',
+    expenditure: '#f59e0b'
+  };
+
+  const activeColor = CATEGORY_COLORS[selectedCategory] || '#3b82f6';
 
 
   return (
     <div className="min-h-screen bg-zinc-100 dark:bg-[#111114] pb-12"
-      >
+    >
 
-      <div className='bg-gradient-to-b from-zinc-100 to-zinc-200 dark:from-zinc-900 dark:to-zinc-950 mx-auto'>
+      <div className='bg-gradient-to-b from-zinc-100 to-zinc-300 dark:from-zinc-900 dark:to-zinc-950 mx-auto'>
         <div className='flex items-center justify-between max-w-6xl mx-auto p-4'>
-          <h1 className='text-xl tracking-widest uppercase font-bold text-center text-zinc-800 dark:text-zinc-200'>
-            Data Malaysia
-          </h1>
+            <div className='relative'>
+              {globeAnimation && (
+                <div className='w-8 h-8 absolute -left-10 -top-8.5'>
+                  <Lottie animationData={globeAnimation} loop={true} style={{ width: '300%', height: '300%' }} />
+                </div>
+              )}
+              <h1 className='ml-8 text-xl font-mono uppercase font-bold text-center text-zinc-800 dark:text-zinc-200'>
+                Data Malaysia
+              </h1>
+            </div>
           <ThemeToggleButton />
         </div>
       </div>
@@ -45,7 +71,7 @@ const Home = () => {
             <div className="flex relative">
               {/* Sliding Background */}
               <motion.div
-                className="absolute top-0 left-0 bg-sky-500 dark:bg-zinc-950 rounded-md shadow-sm"
+                className="absolute top-0 left-0 bg-gradient-to-b from-zinc-500 to-zinc-400 dark:from-zinc-800 dark:to-zinc-700 rounded-md shadow-sm"
                 initial={false}
                 animate={{
                   x: isProMode ? '100%' : '0%',
@@ -111,6 +137,7 @@ const Home = () => {
           <ChartSection
             selectedState={activeState || 'selangor'}
             selectedChartType={selectedChartType}
+            activeColor={activeColor}
             chartData={chartData}
           />
         )}
@@ -118,7 +145,7 @@ const Home = () => {
         <Footer />
 
         <FooterBranding />
-        
+
       </div>
     </div>
   );

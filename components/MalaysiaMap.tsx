@@ -11,14 +11,39 @@ interface MalaysiaMapProps {
   showMapLegend: boolean;
 }
 
+// Map category to chart colors
+const CATEGORY_COLORS: Record<DataCategory, string> = {
+  income_median: '#3b82f6',
+  population: '#10b981',
+  crime: '#ef4444',
+  water_consumption: '#06b6d4',
+  expenditure: '#f59e0b'
+};
+
 const MalaysiaMap = ({ activeState, selectedCategory, onStateChange, getStateData, showMapLegend = false }: MalaysiaMapProps) => {
+  const activeColor = CATEGORY_COLORS[selectedCategory];
+  
   return (
-    <div className="relative bg-white dark:bg-zinc-900 rounded-xl shadow-lg p-8 pt-16 lg:pt-8 flex flex-col justify-center items-center">
+    <div className="relative bg-white dark:bg-zinc-900 rounded-xl shadow-lg p-8 pt-36 lg:pt-8 flex flex-col justify-center items-center">
+      {/* Malaysia Population */}
+      <div className='absolute flex flex-col lg:flex-row gap-0 lg:gap-2 top-4 left-4 font-mono text-[10px] lg:text-xs'>
+        <p className='text-zinc-500 dark:text-zinc-400'>🇲🇾 Population:</p>
+        <p className='tracking-widest font-bold text-zinc-700 dark:text-zinc-300'>34,231,700</p>
+      </div>
+      {/* States */}
+      <div className='absolute flex flex-col lg:flex-row gap-0 lg:gap-2 top-4 right-4 font-mono text-[10px] lg:text-xs'>
+        <p className='text-end text-zinc-500 dark:text-zinc-400'>3 Federal</p>
+        <p className='text-end text-zinc-500 dark:text-zinc-400 hidden lg:block'>|</p>
+        <p className='text-end tracking-widest font-bold text-zinc-700 dark:text-zinc-300'>13 States</p>
+      </div>
       {/* State name and data display */}
-      <div className="absolute top-0 lg:top-20 text-center min-h-[100px] flex flex-col items-center justify-center">
+      <div className="absolute top-16 lg:top-20 text-center min-h-[100px] flex flex-col items-center justify-center">
         {activeState ? (
           <div key={activeState} className="animate-fade-in">
-            <div className="text-xl lg:text-4xl font-bold text-sky-600 dark:text-sky-400 mb-0 lg:mb-2">
+            <div 
+              className="text-xl lg:text-4xl font-bold mb-0 lg:mb-2" 
+              style={{ color: activeColor }}
+            >
               {states.find(s => s.id === activeState)?.name}
             </div>
             {(() => {
@@ -29,7 +54,10 @@ const MalaysiaMap = ({ activeState, selectedCategory, onStateChange, getStateDat
                   <div className="font-semibold text-zinc-500 dark:text-zinc-400 text-xs lg:text-base mb-1">
                     {getCategoryLabel(selectedCategory)}
                   </div>
-                  <div className="font-bold text-sky-600 dark:text-sky-400">
+                  <div 
+                    className="font-bold" 
+                    style={{ color: activeColor }}
+                  >
                     {formatValue(getDataValue(data, selectedCategory), selectedCategory)}
                   </div>
                 </div>
@@ -47,28 +75,32 @@ const MalaysiaMap = ({ activeState, selectedCategory, onStateChange, getStateDat
         )}
       </div>
 
-      <div className="relative w-full">
+      <div className="relative w-full mt-0 lg:mt-12">
         {/* Interactive Map */}
         <svg
           viewBox="0 0 940 400"
           className="w-full h-auto"
           xmlns="http://www.w3.org/2000/svg"
         >
+          {/* Gradient Definition */}
+          <defs>
+            <linearGradient id="state-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor={activeColor} stopOpacity="0.6" />
+              <stop offset="100%" stopColor={activeColor} stopOpacity="0.2" />
+            </linearGradient>
+          </defs>
+          
           {states.map((state) => {
             const isActive = activeState === state.id;
-            
+
             return (
               <g key={state.id}>
                 <path
                   d={state.path}
-                  fill={isActive ? '#0ea5e9' : '#e5e7eb'}
-                  stroke="#374151"
-                  strokeWidth="1.5"
-                  className={`transition-all duration-200 cursor-pointer hover:fill-sky-500 dark:hover:fill-sky-400 ${
-                    isActive 
-                      ? 'dark:fill-sky-500' 
-                      : 'dark:fill-zinc-600'
-                  } dark:stroke-zinc-400`}
+                  fill={isActive ? 'url(#state-gradient)' : '#e5e7eb'}
+                  stroke={isActive ? activeColor : '#374151'}
+                  strokeWidth={isActive ? '2' : '1.5'}
+                  className={`transition-all duration-200 cursor-pointer hover:opacity-80 ${!isActive && 'dark:fill-zinc-600 dark:stroke-zinc-400'}`}
                   onMouseEnter={() => onStateChange(state.id)}
                   onMouseLeave={() => { }} // Don't clear state on mouse leave
                 />
@@ -79,8 +111,8 @@ const MalaysiaMap = ({ activeState, selectedCategory, onStateChange, getStateDat
       </div>
 
       {showMapLegend &&
-        <div className='-mb-4'>
-          <MapLegend />
+        <div className='-mb-4 lg:mb-0 mt-4 lg:mt-4'>
+          <MapLegend activeColor={activeColor} />
         </div>
       }
 

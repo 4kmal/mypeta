@@ -1,4 +1,8 @@
-const MapLegend = () => {
+interface MapLegendProps {
+  activeColor?: string;
+}
+
+const MapLegend = ({ activeColor = '#3b82f6' }: MapLegendProps) => {
   return (
     <div className="mt-8 text-center text-sm text-zinc-600 dark:text-zinc-400">
       <div className="flex justify-center gap-6 mt-4">
@@ -7,7 +11,13 @@ const MapLegend = () => {
           <span>Default</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-sky-500 dark:bg-sky-500 border-2 border-zinc-700 dark:border-zinc-400"></div>
+          <div 
+            className="w-4 h-4 border-2" 
+            style={{ 
+              background: `linear-gradient(180deg, ${activeColor}99, ${activeColor}33)`,
+              borderColor: activeColor 
+            }}
+          ></div>
           <span className="hidden lg:block">Hover to view data</span>
           <span className="block lg:hidden">Click to view data</span>
         </div>

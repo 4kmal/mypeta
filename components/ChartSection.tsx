@@ -5,6 +5,7 @@ import { states } from '@/data/states';
 interface ChartSectionProps {
   selectedState: string;
   selectedChartType: ChartType;
+  activeColor?: string;
   chartData: {
     income: any[];
     population: any[];
@@ -17,11 +18,13 @@ interface ChartSectionProps {
 const ChartSection = ({
   selectedState,
   selectedChartType,
+  activeColor,
   chartData
 }: ChartSectionProps) => {
   const config = CHART_CONFIGS[selectedChartType];
   const selectedStateData = states.find(state => state.id === selectedState);
   const stateName = selectedStateData?.name || selectedState;
+  const chartColor = activeColor || config.color;
   
   const dataMap = {
     income: chartData.income,
@@ -38,7 +41,7 @@ const ChartSection = ({
         <DataChart
           data={dataMap[selectedChartType]}
           dataKey={config.dataKey}
-          color={config.color}
+          color={chartColor}
           title={config.title}
           description={`${config.title} trend for ${stateName}`}
         />
