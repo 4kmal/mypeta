@@ -1,3 +1,4 @@
+import Head from 'next/head';
 import { useData } from '@/contexts/DataContext';
 import CategorySelectorDialog from '@/components/CategorySelectorDialog';
 import StateSelectorDialog from '@/components/StateSelector';
@@ -9,6 +10,7 @@ import ThemeToggleButton from '@/components/ThemeToggleButton';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import Lottie from 'lottie-react';
+import { SEO_CONFIG, STRUCTURED_DATA } from '@/lib/seo';
 
 const Home = () => {
   const {
@@ -44,8 +46,27 @@ const Home = () => {
 
 
   return (
-    <div className="min-h-screen bg-zinc-100 dark:bg-[#111114] pb-12"
-    >
+    <>
+      <Head>
+        <title>{SEO_CONFIG.title}</title>
+        <meta name="description" content={SEO_CONFIG.description} />
+        <meta name="keywords" content={SEO_CONFIG.keywords} />
+        <link rel="canonical" href={SEO_CONFIG.url} />
+        
+        {/* Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }}
+        />
+        
+        {/* Additional Meta Tags */}
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta httpEquiv="content-language" content="en" />
+        <meta name="format-detection" content="telephone=no" />
+      </Head>
+      
+      <div className="min-h-screen bg-zinc-100 dark:bg-[#111114] pb-12"
+      >
 
       <div className='bg-gradient-to-b from-zinc-100 to-zinc-300 dark:from-zinc-900 dark:to-zinc-950 mx-auto'>
         <div className='flex items-center justify-between max-w-6xl mx-auto p-4'>
@@ -148,6 +169,7 @@ const Home = () => {
 
       </div>
     </div>
+    </>
   );
 };
 
