@@ -4,6 +4,7 @@ import StateSelectorDialog from '@/components/StateSelector';
 import MalaysiaMap from '@/components/MalaysiaMap';
 import ChartSection from '@/components/ChartSection';
 import Footer from '@/components/Footer';
+import FooterBranding from '@/components/FooterBranding';
 import ThemeToggleButton from '@/components/ThemeToggleButton';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
@@ -22,13 +23,12 @@ const Home = () => {
 
   const [isProMode, setIsProMode] = useState(false);
 
-  const darkColor = 'oklch(18.1% 0.005 285.823)';
 
   return (
-    <div className="min-h-screen bg-zinc-100 dark:bg-[${darkColor}] pb-12"
-      style={{ backgroundColor: darkColor }}>
+    <div className="min-h-screen bg-zinc-100 dark:bg-[#111114] pb-12"
+      >
 
-      <div className='bg-white dark:bg-zinc-900 mx-auto'>
+      <div className='bg-gradient-to-b from-zinc-100 to-zinc-200 dark:from-zinc-900 dark:to-zinc-950 mx-auto'>
         <div className='flex items-center justify-between max-w-6xl mx-auto p-4'>
           <h1 className='text-xl tracking-widest uppercase font-bold text-center text-zinc-800 dark:text-zinc-200'>
             Data Malaysia
@@ -117,14 +117,8 @@ const Home = () => {
 
         <Footer />
 
-        {/* Footer Branding */}
-        <div className="flex lg:justify-end justify-center mt-8 lg:-mt-12">
-          <div className="border-2 border-x-0 border-white/10 rounded-full p-2 px-6 bg-white/5">
-            <p className="text-xs text-white font-bold tracking-wide">
-              POWERED BY <span className="text-orange-400 italic">RAPID</span>SCREEN
-            </p>
-          </div>
-        </div>
+        <FooterBranding />
+        
       </div>
     </div>
   );

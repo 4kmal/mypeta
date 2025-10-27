@@ -12,7 +12,7 @@ interface DataChartProps {
 }
 
 const DataChart = memo(({ data, dataKey, color, title, description }: DataChartProps) => (
-  <Card>
+  <Card className='bg-white dark:bg-[#111114]'>
     <CardHeader>
       <CardTitle>{title}</CardTitle>
       <CardDescription>{description}</CardDescription>
