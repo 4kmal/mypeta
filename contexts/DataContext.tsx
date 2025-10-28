@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, ReactNode } from 'react';
 import type { DataCategory } from '@/types';
 import { useDataFetching } from '@/hooks/useDataFetching';
 import { mapStateName, getLatestData, filterAndSortByState } from '@/lib/helpers';
@@ -28,10 +28,28 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
+// Map DataCategory to ChartType
+const categoryToChartType = (category: DataCategory): ChartType => {
+  const mapping: Record<DataCategory, ChartType> = {
+    'income_median': 'income',
+    'population': 'population',
+    'crime': 'crime',
+    'water_consumption': 'water',
+    'expenditure': 'expense'
+  };
+  return mapping[category];
+};
+
 export const DataProvider = ({ children }: { children: ReactNode }) => {
   const [activeState, setActiveState] = useState<string | null>('selangor');
   const [selectedCategory, setSelectedCategory] = useState<DataCategory>('income_median');
   const [selectedChartType, setSelectedChartType] = useState<ChartType>('income');
+
+  // Sync chartType with category whenever category changes
+  useEffect(() => {
+    const newChartType = categoryToChartType(selectedCategory);
+    setSelectedChartType(newChartType);
+  }, [selectedCategory]);
 
   const {
     incomeData,
