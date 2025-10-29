@@ -96,7 +96,7 @@ const Home = () => {
             <div className="flex relative">
               {/* Sliding Background */}
               <motion.div
-                className="absolute top-0 left-0 bg-gradient-to-b from-zinc-500 to-zinc-400 dark:from-zinc-800 dark:to-zinc-700 rounded-md shadow-sm"
+                className="absolute top-0 left-0 bg-gradient-to-b from-zinc-900 to-zinc-600 dark:from-zinc-800 dark:to-zinc-700 rounded-md shadow-sm"
                 initial={false}
                 animate={{
                   x: isProMode ? '100%' : '0%',

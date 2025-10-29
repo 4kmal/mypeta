@@ -1,6 +1,6 @@
 import { usePrivy, useLoginWithOAuth } from "@privy-io/react-auth";
 import { Button } from "@/components/ui/button";
-import { LogIn, LogOut, User } from "lucide-react";
+import { LogOut, User } from "lucide-react";
 import { useState } from "react";
 import {
   Dialog,
@@ -9,6 +9,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+// X (Twitter) Logo Component
+const XLogo = ({ className }: { className?: string }) => (
+  <svg
+    viewBox="0 0 24 24"
+    className={className}
+    fill="currentColor"
+    aria-hidden="true"
+  >
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
 
 const AuthButton = () => {
   const { ready, authenticated, logout, user } = usePrivy();
@@ -45,34 +57,23 @@ const AuthButton = () => {
 
     return (
       <>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowProfile(true)}
-            className="gap-2"
-          >
-            {profilePicture ? (
-              <img
-                src={profilePicture}
-                alt={displayName}
-                className="h-5 w-5 rounded-full"
-              />
-            ) : (
-              <User className="h-4 w-4" />
-            )}
-            <span className="hidden sm:inline">{displayName}</span>
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => logout()}
-            className="gap-2"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline">Log Out</span>
-          </Button>
-        </div>
+
+        <button
+          onClick={() => setShowProfile(true)}
+          className="cursor-pointer relative p-2 rounded-lg shadow-md bg-zinc-800 dark:bg-zinc-200 hover:bg-zinc-900 dark:hover:bg-zinc-300 transition-colors duration-200"
+          aria-label="View profile"
+        >
+          {profilePicture ? (
+            <img
+              src={profilePicture}
+              alt={displayName}
+              className="h-6 w-6 rounded-full"
+            />
+          ) : (
+            <User className="h-6 w-6 text-white dark:text-zinc-800" />
+          )}
+        </button>
+
 
         <Dialog open={showProfile} onOpenChange={setShowProfile}>
           <DialogContent className="sm:max-w-md">
@@ -114,15 +115,13 @@ const AuthButton = () => {
   }
 
   return (
-    <Button
-      variant="default"
-      size="sm"
+    <button
       onClick={handleLogin}
-      className="gap-2"
+      className="cursor-pointer flex items-center px-4 py-2 rounded-lg gap-1.5 bg-zinc-800 text-white hover:bg-zinc-900 dark:bg-zinc-200 dark:text-zinc-800 dark:hover:bg-zinc-300 shadow-md hover:shadow-lg transition-all"
     >
-      <LogIn className="h-4 w-4" />
-      <span>Log in with X</span>
-    </Button>
+      <span className="font-medium">Sign in with</span>
+      <XLogo className="h-4 w-4" />
+    </button>
   );
 };
 

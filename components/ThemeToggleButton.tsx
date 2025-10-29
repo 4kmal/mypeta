@@ -7,15 +7,16 @@ const ThemeToggleButton = () => {
   return (
     <button
       onClick={toggleTheme}
-      className="cursor-pointer relative p-2 rounded-lg shadow-md bg-zinc-100 dark:bg-zinc-900 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors duration-200"
+      className="cursor-pointer relative p-2 rounded-lg shadow-md bg-zinc-800 dark:bg-zinc-200 hover:bg-zinc-900 dark:hover:bg-zinc-300 transition-colors duration-200"
       aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
     >
       <div className="relative w-6 h-6">
         {/* Sun Icon */}
         <motion.svg
-          className="absolute inset-0 w-6 h-6 text-yellow-500"
+          className="absolute inset-0 w-6 h-6 text-yellow-400 dark:text-zinc-800"
           fill="none"
           stroke="currentColor"
+          strokeWidth="1.5"
           viewBox="0 0 24 24"
           initial={false}
           animate={{
@@ -29,12 +30,12 @@ const ThemeToggleButton = () => {
           }}
         >
           <circle cx="12" cy="12" r="5" />
-          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+          <path d="M12 0v3M12 21v3M3.5 3.5l2.12 2.12M18.38 18.38l2.12 2.12M0 12h3M21 12h3M3.5 20.5l2.12-2.12M18.38 5.62l2.12-2.12" />
         </motion.svg>
 
         {/* Moon Icon */}
         <motion.svg
-          className="absolute inset-0 w-6 h-6 text-blue-400"
+          className="absolute inset-0 w-6 h-6 text-zinc-200 dark:text-blue-500"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
