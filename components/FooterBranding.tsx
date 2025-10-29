@@ -1,12 +1,12 @@
 const FooterBranding = () => {
   return (
-    <a href="https://x.com/solahsol_" target="_blank" rel="noopener noreferrer" className="flex lg:justify-end justify-center mt-8 lg:-mt-12">
+    <div className="flex lg:justify-end justify-center mt-8 lg:-mt-12">
       <div className="border-2 border-x-0 rounded-full p-2 px-6 bg-zinc-950/3 border-zinc-950/5 dark:bg-white/5 dark:border-white/10">
         <p className="text-xs font-bold tracking-wide text-zinc-950 dark:text-white">
           POWERED BY <span className="text-orange-400 italic">RAPID</span>SCREEN
         </p>
       </div>
-    </a>
+    </div>
   );
 };
 
