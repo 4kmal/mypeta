@@ -7,6 +7,7 @@ import ChartSection from '@/components/ChartSection';
 import Footer from '@/components/Footer';
 import FooterBranding from '@/components/FooterBranding';
 import ThemeToggleButton from '@/components/ThemeToggleButton';
+import AuthButton from '@/components/AuthButton';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import Lottie from 'lottie-react';
@@ -80,7 +81,10 @@ const Home = () => {
                 My Peta
               </h1>
             </div>
-          <ThemeToggleButton />
+          <div className='flex items-center gap-3'>
+            <AuthButton />
+            <ThemeToggleButton />
+          </div>
         </div>
       </div>
 
