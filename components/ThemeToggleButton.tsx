@@ -7,13 +7,13 @@ const ThemeToggleButton = () => {
   return (
     <button
       onClick={toggleTheme}
-      className="cursor-pointer relative p-2 rounded-lg shadow-md bg-zinc-800 dark:bg-zinc-200 hover:bg-zinc-900 dark:hover:bg-zinc-300 transition-colors duration-200"
+      className="cursor-pointer flex items-center gap-2 px-3 py-3 md:p-2 rounded-lg shadow-md bg-zinc-300 dark:bg-zinc-800 hover:bg-zinc-400 dark:hover:bg-zinc-700 transition-colors duration-200"
       aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
     >
-      <div className="relative w-6 h-6">
+      <div className="relative w-6 h-6 flex-shrink-0">
         {/* Sun Icon */}
         <motion.svg
-          className="absolute inset-0 w-6 h-6 text-yellow-400 dark:text-zinc-800"
+          className="absolute inset-0 w-6 h-6 text-yellow-400 dark:text-zinc-400"
           fill="none"
           stroke="currentColor"
           strokeWidth="1.5"
@@ -35,8 +35,9 @@ const ThemeToggleButton = () => {
 
         {/* Moon Icon */}
         <motion.svg
-          className="absolute inset-0 w-6 h-6 text-zinc-200 dark:text-blue-500"
+          className="absolute inset-0 w-6 h-6 text-zinc-500 dark:text-blue-400"
           fill="none"
+          strokeWidth={1.5}
           stroke="currentColor"
           viewBox="0 0 24 24"
           initial={false}
@@ -53,6 +54,9 @@ const ThemeToggleButton = () => {
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
         </motion.svg>
       </div>
+      <span className="md:hidden font-semibold text-zinc-500 dark:text-zinc-300">
+        {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
+      </span>
     </button>
   );
 };

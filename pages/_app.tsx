@@ -3,6 +3,8 @@ import type { AppProps } from "next/app";
 import { PrivyProvider } from "@privy-io/react-auth";
 import { DataProvider } from "@/contexts/DataContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { UserProfileProvider } from "@/contexts/UserProfileContext";
+import { Toaster } from "@/components/ui/sonner";
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
@@ -17,9 +19,12 @@ export default function App({ Component, pageProps }: AppProps) {
       }}
     >
       <ThemeProvider>
-        <DataProvider>
-          <Component {...pageProps} />
-        </DataProvider>
+        <UserProfileProvider>
+          <DataProvider>
+            <Component {...pageProps} />
+            <Toaster />
+          </DataProvider>
+        </UserProfileProvider>
       </ThemeProvider>
     </PrivyProvider>
   );

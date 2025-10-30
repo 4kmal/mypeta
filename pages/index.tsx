@@ -6,11 +6,9 @@ import MalaysiaMap from '@/components/MalaysiaMap';
 import ChartSection from '@/components/ChartSection';
 import Footer from '@/components/Footer';
 import FooterBranding from '@/components/FooterBranding';
-import ThemeToggleButton from '@/components/ThemeToggleButton';
-import AuthButton from '@/components/AuthButton';
+import PageHeader from '@/components/PageHeader';
 import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
-import Lottie from 'lottie-react';
+import { useState } from 'react';
 import { SEO_CONFIG, STRUCTURED_DATA } from '@/lib/seo';
 
 const Home = () => {
@@ -26,13 +24,6 @@ const Home = () => {
   } = useData();
 
   const [isProMode, setIsProMode] = useState(false);
-  const [globeAnimation, setGlobeAnimation] = useState<any>(null);
-
-  useEffect(() => {
-    fetch('/lottie/globe.json')
-      .then(response => response.json())
-      .then(data => setGlobeAnimation(data));
-  }, []);
 
   // Map category to colors
   const CATEGORY_COLORS: Record<string, string> = {
@@ -66,27 +57,8 @@ const Home = () => {
         <meta name="format-detection" content="telephone=no" />
       </Head>
       
-      <div className="min-h-screen bg-zinc-100 dark:bg-[#111114] pb-12"
-      >
-
-      <div className='bg-gradient-to-b from-zinc-100 to-zinc-300 dark:from-zinc-900 dark:to-zinc-950 mx-auto'>
-        <div className='flex items-center justify-between max-w-6xl mx-auto p-4'>
-            <div className='relative'>
-              {globeAnimation && (
-                <div className='w-8 h-8 absolute -left-10 -top-8.5'>
-                  <Lottie animationData={globeAnimation} loop={true} style={{ width: '300%', height: '300%' }} />
-                </div>
-              )}
-              <h1 className='ml-8 text-xl font-mono uppercase font-bold text-center text-zinc-800 dark:text-zinc-200'>
-                My Peta
-              </h1>
-            </div>
-          <div className='flex items-center gap-3'>
-            <AuthButton />
-            <ThemeToggleButton />
-          </div>
-        </div>
-      </div>
+      <div className="min-h-screen bg-zinc-100 dark:bg-[#111114] pb-12">
+        <PageHeader showPollsButton={true} />
 
       <div className="max-w-6xl mx-auto px-4 pt-12">
 
@@ -169,7 +141,7 @@ const Home = () => {
 
         <Footer />
 
-        <FooterBranding />
+        {/* <FooterBranding /> */}
 
       </div>
     </div>
