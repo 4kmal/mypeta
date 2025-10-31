@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Tooltip,
   TooltipContent,
@@ -77,7 +78,7 @@ const PollsPage = () => {
   const [userVotes, setUserVotes] = useState<VoteData>({});
   const [pollResults, setPollResults] = useState<PollResults>({});
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [allPolls, setAllPolls] = useState<Poll[]>(POLLS_DATA);
+  const [allPolls, setAllPolls] = useState<Poll[]>([]);
   const [showCreatePoll, setShowCreatePoll] = useState(false);
   const [newPoll, setNewPoll] = useState({
     question: '',
@@ -87,6 +88,8 @@ const PollsPage = () => {
     endDate: '',
   });
   const [selectedPollForDetails, setSelectedPollForDetails] = useState<Poll | null>(null);
+  const [isLoadingPolls, setIsLoadingPolls] = useState(true);
+  const [isLoadingResults, setIsLoadingResults] = useState(true);
 
   // Load user votes from Supabase
   const loadUserVotes = async () => {
@@ -126,49 +129,91 @@ const PollsPage = () => {
     }
   }, [isSignedIn, internalUserId]);
 
-  // Load poll results from Supabase
+  // Load poll results from Supabase using optimized function
   const loadPollResults = async () => {
-    if (allPolls.length === 0) return;
+    if (allPolls.length === 0) {
+      setIsLoadingResults(false);
+      return;
+    }
 
     try {
-      const results: PollResults = {};
+      setIsLoadingResults(true);
+      
+      // Call the optimized PostgreSQL function that returns all results in one query
+      const { data, error } = await supabase.rpc('get_all_poll_results');
 
-      for (const poll of allPolls) {
-        // Get vote counts per option
-        const { data: voteCounts } = await supabase
-          .from('votes')
-          .select('option_index')
-          .eq('poll_id', poll.id);
-
-        const votes = new Array(poll.options.length).fill(0);
-        voteCounts?.forEach(v => {
-          votes[v.option_index]++;
+      if (error) {
+        console.error('Error loading poll results:', error);
+        // Set empty results for all polls so they show 0 votes instead of loading forever
+        const emptyResults: PollResults = {};
+        allPolls.forEach(poll => {
+          emptyResults[poll.id] = {
+            votes: new Array(poll.options.length).fill(0),
+            totalVotes: 0,
+            stateBreakdown: {}
+          };
         });
-
-        // Get state breakdown
-        const { data: stateBreakdown } = await supabase
-          .from('vote_state_breakdown')
-          .select('*')
-          .eq('poll_id', poll.id);
-
-        const stateBreakdownMap: Record<string, number[]> = {};
-        stateBreakdown?.forEach(sb => {
-          if (!stateBreakdownMap[sb.state_id]) {
-            stateBreakdownMap[sb.state_id] = new Array(poll.options.length).fill(0);
-          }
-          stateBreakdownMap[sb.state_id][sb.option_index] = sb.vote_count;
-        });
-
-        results[poll.id] = {
-          votes,
-          totalVotes: votes.reduce((a, b) => a + b, 0),
-          stateBreakdown: stateBreakdownMap
-        };
+        setPollResults(emptyResults);
+        setIsLoadingResults(false);
+        return;
       }
 
+      // Transform the results into our format
+      const results: PollResults = {};
+
+      // Initialize results for all polls
+      allPolls.forEach(poll => {
+        results[poll.id] = {
+          votes: new Array(poll.options.length).fill(0),
+          totalVotes: 0,
+          stateBreakdown: {}
+        };
+      });
+
+      // Populate with actual data
+      data?.forEach((row: any) => {
+        // poll_id comes back as UUID string from PostgreSQL
+        const pollId = row.poll_id;
+        const optionIndex = row.option_index;
+        const totalVotes = parseInt(row.total_votes) || 0;
+        const stateBreakdown = row.state_breakdown || {};
+
+        if (!results[pollId]) {
+          // Poll might have been deleted or not in our list
+          console.warn('Poll not found in current list:', pollId);
+          return;
+        }
+
+        // Update votes for this option
+        results[pollId].votes[optionIndex] = totalVotes;
+        results[pollId].totalVotes += totalVotes;
+
+        // Parse state breakdown
+        Object.entries(stateBreakdown).forEach(([state, votes]) => {
+          if (!results[pollId].stateBreakdown[state]) {
+            results[pollId].stateBreakdown[state] = new Array(
+              results[pollId].votes.length
+            ).fill(0);
+          }
+          results[pollId].stateBreakdown[state][optionIndex] = parseInt(votes as string) || 0;
+        });
+      });
+
       setPollResults(results);
+      setIsLoadingResults(false);
     } catch (error) {
       console.error('Error loading poll results:', error);
+      // Set empty results on error
+      const emptyResults: PollResults = {};
+      allPolls.forEach(poll => {
+        emptyResults[poll.id] = {
+          votes: new Array(poll.options.length).fill(0),
+          totalVotes: 0,
+          stateBreakdown: {}
+        };
+      });
+      setPollResults(emptyResults);
+      setIsLoadingResults(false);
     }
   };
 
@@ -181,6 +226,8 @@ const PollsPage = () => {
   // Load polls from Supabase
   const loadPolls = async () => {
     try {
+      setIsLoadingPolls(true);
+      
       const { data: pollsData, error: pollsError } = await supabase
         .from('polls')
         .select('*')
@@ -189,6 +236,7 @@ const PollsPage = () => {
 
       if (pollsError) {
         console.error('Error loading polls:', pollsError);
+        setIsLoadingPolls(false);
         return;
       }
 
@@ -214,8 +262,10 @@ const PollsPage = () => {
       );
 
       setAllPolls(pollsWithOptions);
+      setIsLoadingPolls(false);
     } catch (error) {
       console.error('Error in loadPolls:', error);
+      setIsLoadingPolls(false);
     }
   };
 
@@ -958,7 +1008,28 @@ const PollsPage = () => {
 
           {/* Polls Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-            {filteredPolls.map((poll, index) => {
+            {isLoadingPolls || isLoadingResults ? (
+              // Loading skeletons
+              Array.from({ length: 6 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="bg-white dark:bg-zinc-900 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-800 p-6"
+                >
+                  <div className="mb-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <Skeleton className="h-6 w-3/4" />
+                      <Skeleton className="h-5 w-12" />
+                    </div>
+                    <Skeleton className="h-4 w-full mt-2" />
+                  </div>
+                  <div className="space-y-3">
+                    <Skeleton className="h-14 w-full" />
+                    <Skeleton className="h-14 w-full" />
+                  </div>
+                </div>
+              ))
+            ) : (
+              filteredPolls.map((poll, index) => {
               const hasVoted = userVotes[poll.id];
               const results = pollResults[poll.id];
               const isPollEnded = !isPollLive(poll);
@@ -1123,7 +1194,8 @@ const PollsPage = () => {
                   )}
                 </motion.div>
               );
-            })}
+            })
+            )}
           </div>
 
           {/* Poll Details Dialog */}

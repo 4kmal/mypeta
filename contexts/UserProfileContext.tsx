@@ -56,13 +56,10 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // Load user data from Supabase
   const loadUserData = async () => {
     if (!user) {
-      console.log('[UserProfile] No user object, skipping load');
       return;
     }
 
     try {
-      console.log('[UserProfile] Loading user data for Clerk ID:', user.id);
-      
       // Get X/Twitter account from external accounts
       const twitterAccount = user.externalAccounts?.find(account => 
         account.verification?.strategy === 'oauth_twitter' || 
@@ -71,12 +68,6 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
       const username = twitterAccount?.username || user.username || user.firstName || user.emailAddresses[0]?.emailAddress?.split('@')[0];
       const email = user.emailAddresses[0]?.emailAddress;
       const profilePicture = user.imageUrl;
-
-      console.log('[UserProfile] Calling get_or_create_user with:', {
-        clerk_id: user.id,
-        username,
-        email
-      });
 
       const { data, error } = await supabase
         .rpc('get_or_create_user', {
@@ -88,30 +79,15 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       if (error) {
         console.error('[UserProfile] Error loading user data:', error);
-        console.error('[UserProfile] Error details:', JSON.stringify(error, null, 2));
-        
-        // Show user-friendly error
-        if (typeof window !== 'undefined') {
-          const errorMsg = error.message || 'Unable to load user data';
-          console.error('[UserProfile] Failed to sync with backend:', errorMsg);
-        }
         return;
       }
 
-      console.log('[UserProfile] RPC response:', data);
-
       if (!data || data.length === 0) {
         console.error('[UserProfile] No data returned from get_or_create_user');
-        
-        // Show user-friendly error
-        if (typeof window !== 'undefined') {
-          console.error('[UserProfile] Backend returned empty data. Please refresh the page.');
-        }
         return;
       }
 
       const userData = data[0];
-      console.log('[UserProfile] User data loaded successfully:', userData);
       
       setInternalUserId(userData.user_id);
       setSelectedStateInternal(userData.selected_state);
@@ -120,11 +96,8 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
         exp: userData.exp
       });
 
-      console.log('[UserProfile] State set - internalUserId:', userData.user_id, 'selectedState:', userData.selected_state, 'points:', userData.points, 'exp:', userData.exp);
-
       // Show state selector if no state selected (for new users)
       if (!userData.selected_state && userData.is_new_user) {
-        console.log('[UserProfile] New user without state, showing selector');
         setShowStateSelector(true);
       }
     } catch (error) {
@@ -157,8 +130,6 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
 
     try {
-      console.log('[UserProfile] Setting state:', state, 'for Clerk ID:', user.id);
-      
       const { error } = await supabase
         .rpc('update_user_state', { 
           p_state_id: state,
@@ -167,11 +138,9 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       if (error) {
         console.error('[UserProfile] Error updating state:', error);
-        console.error('[UserProfile] Error details:', JSON.stringify(error, null, 2));
         return;
       }
 
-      console.log('[UserProfile] State updated successfully');
       setSelectedStateInternal(state);
       setShowStateSelector(false);
       
