@@ -1,6 +1,6 @@
 import Head from 'next/head';
 import { useState, useEffect } from 'react';
-import { usePrivy } from '@privy-io/react-auth';
+import { useUser } from '@clerk/nextjs';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 import { POLLS_DATA, Poll } from '@/data/polls';
 import { supabase } from '@/lib/supabase';
@@ -61,7 +61,7 @@ interface IndividualVote {
 }
 
 const PollsPage = () => {
-  const { authenticated, user } = usePrivy();
+  const { user, isSignedIn } = useUser();
   const { 
     selectedState, 
     stats, 
@@ -90,7 +90,7 @@ const PollsPage = () => {
 
   // Load user votes from Supabase
   const loadUserVotes = async () => {
-    if (!authenticated || !internalUserId) return;
+    if (!isSignedIn || !internalUserId) return;
 
     try {
       const { data, error } = await supabase
@@ -119,12 +119,12 @@ const PollsPage = () => {
   };
 
   useEffect(() => {
-    if (authenticated && internalUserId) {
+    if (isSignedIn && internalUserId) {
       loadUserVotes();
     } else {
       setUserVotes({}); // Clear votes when logged out
     }
-  }, [authenticated, internalUserId]);
+  }, [isSignedIn, internalUserId]);
 
   // Load poll results from Supabase
   const loadPollResults = async () => {
@@ -224,7 +224,7 @@ const PollsPage = () => {
   }, []);
 
   const handleVote = async (pollId: string, optionIndex: number) => {
-    if (!authenticated) {
+    if (!isSignedIn) {
       toast.error('Please sign in to vote', {
         icon: <Lock className="h-4 w-4" />,
         description: 'You need to be logged in to participate in polls',
@@ -330,7 +330,7 @@ const PollsPage = () => {
           p_option_id: optionData.id,
           p_option_index: optionIndex,
           p_user_state: selectedState,
-          p_privy_user_id: user.id
+          p_clerk_user_id: user.id
         });
 
       if (error) {
@@ -539,7 +539,7 @@ const PollsPage = () => {
   };
 
   const handleCreatePoll = async () => {
-    if (!authenticated) {
+    if (!isSignedIn) {
       toast.error('Please sign in to create a poll', {
         icon: <Lock className="h-4 w-4" />,
       });
@@ -594,7 +594,7 @@ const PollsPage = () => {
           p_description: newPoll.description.trim() || 'User-created poll',
           p_category: newPoll.category,
           p_options: options,
-          p_privy_user_id: user.id,
+          p_clerk_user_id: user.id,
           p_end_date: newPoll.endDate ? new Date(newPoll.endDate).toISOString() : null
         });
 
@@ -677,7 +677,7 @@ const PollsPage = () => {
             </div>
             <p className="text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
               Vote on viral and controversial topics about Malaysia. Your voice matters! 
-              {!selectedState && authenticated && (
+              {!selectedState && isSignedIn && (
                 <span className="block mt-2 text-yellow-600 dark:text-yellow-500 font-medium">
                   ⚠️ Select your state to start voting
                 </span>
@@ -686,7 +686,7 @@ const PollsPage = () => {
           </div>
 
           {/* User Stats Display */}
-          {authenticated && stats && (
+          {isSignedIn && stats && (
             <div className="mb-8 flex items-center justify-center gap-4 text-sm text-zinc-600 dark:text-zinc-400">
               <TooltipProvider>
                 <Tooltip>
@@ -759,7 +759,7 @@ const PollsPage = () => {
 
 
           {/* Create Poll Button and Dialog */}
-          {authenticated && (
+          {isSignedIn && (
             <>
               <div className="mb-6 flex justify-center">
                 <button

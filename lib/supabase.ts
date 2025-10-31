@@ -9,7 +9,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: false, // We're using Privy for auth
+    persistSession: false, // We're using Clerk for auth
   },
 });
 
@@ -20,7 +20,7 @@ export interface Database {
       users: {
         Row: {
           id: string;
-          privy_user_id: string;
+          clerk_user_id: string;
           username: string | null;
           email: string | null;
           profile_picture_url: string | null;

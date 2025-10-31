@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { usePrivy } from '@privy-io/react-auth';
+import { useUser } from '@clerk/nextjs';
 import { supabase } from '@/lib/supabase';
 
 export interface UserStats {
@@ -47,7 +47,7 @@ const getExpProgressValue = (currentExp: number): number => {
 };
 
 export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, authenticated } = usePrivy();
+  const { user, isSignedIn, isLoaded } = useUser();
   const [selectedState, setSelectedStateInternal] = useState<string | null>(null);
   const [showStateSelector, setShowStateSelector] = useState(false);
   const [stats, setStats] = useState<UserStats | null>(null);
@@ -55,23 +55,53 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   // Load user data from Supabase
   const loadUserData = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('[UserProfile] No user object, skipping load');
+      return;
+    }
 
     try {
+      console.log('[UserProfile] Loading user data for Clerk ID:', user.id);
+      
+      // Get X/Twitter account from external accounts
+      const twitterAccount = user.externalAccounts?.find(account => 
+        account.verification?.strategy === 'oauth_twitter' || 
+        (account as any).provider === 'oauth_x'
+      );
+      const username = twitterAccount?.username || user.username || user.firstName || user.emailAddresses[0]?.emailAddress?.split('@')[0];
+      const email = user.emailAddresses[0]?.emailAddress;
+      const profilePicture = user.imageUrl;
+
+      console.log('[UserProfile] Calling get_or_create_user with:', {
+        clerk_id: user.id,
+        username,
+        email
+      });
+
       const { data, error } = await supabase
         .rpc('get_or_create_user', {
-          p_privy_user_id: user.id,
-          p_username: user.twitter?.username || user.email?.address?.split('@')[0],
-          p_email: user.email?.address,
-          p_profile_picture_url: user.twitter?.profilePictureUrl
+          p_clerk_user_id: user.id,
+          p_username: username,
+          p_email: email,
+          p_profile_picture_url: profilePicture
         });
 
       if (error) {
-        console.error('Error loading user data:', error);
+        console.error('[UserProfile] Error loading user data:', error);
+        console.error('[UserProfile] Error details:', JSON.stringify(error, null, 2));
+        return;
+      }
+
+      console.log('[UserProfile] RPC response:', data);
+
+      if (!data || data.length === 0) {
+        console.error('[UserProfile] No data returned from get_or_create_user');
         return;
       }
 
       const userData = data[0];
+      console.log('[UserProfile] User data loaded:', userData);
+      
       setInternalUserId(userData.user_id);
       setSelectedStateInternal(userData.selected_state);
       setStats({
@@ -79,46 +109,59 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
         exp: userData.exp
       });
 
+      console.log('[UserProfile] State set - internalUserId:', userData.user_id, 'selectedState:', userData.selected_state);
+
       // Show state selector if no state selected (for new users)
       if (!userData.selected_state && userData.is_new_user) {
+        console.log('[UserProfile] New user without state, showing selector');
         setShowStateSelector(true);
       }
     } catch (error) {
-      console.error('Error in loadUserData:', error);
+      console.error('[UserProfile] Exception in loadUserData:', error);
     }
   };
 
   // Load user data when authenticated
   useEffect(() => {
-    if (authenticated && user) {
+    if (isLoaded && isSignedIn && user) {
       loadUserData();
-    } else {
+    } else if (isLoaded && !isSignedIn) {
       setSelectedStateInternal(null);
       setShowStateSelector(false);
       setStats(null);
       setInternalUserId(null);
     }
-  }, [authenticated, user]);
+  }, [isLoaded, isSignedIn, user]);
 
   const setSelectedState = async (state: string) => {
-    if (!user) return;
+    if (!user) {
+      console.error('[UserProfile] Cannot set state - no user');
+      return;
+    }
 
     try {
+      console.log('[UserProfile] Setting state:', state, 'for Clerk ID:', user.id);
+      
       const { error } = await supabase
         .rpc('update_user_state', { 
           p_state_id: state,
-          p_privy_user_id: user.id
+          p_clerk_user_id: user.id
         });
 
       if (error) {
-        console.error('Error updating state:', error);
+        console.error('[UserProfile] Error updating state:', error);
+        console.error('[UserProfile] Error details:', JSON.stringify(error, null, 2));
         return;
       }
 
+      console.log('[UserProfile] State updated successfully');
       setSelectedStateInternal(state);
       setShowStateSelector(false);
+      
+      // Reload user data to ensure everything is in sync
+      await loadUserData();
     } catch (error) {
-      console.error('Error in setSelectedState:', error);
+      console.error('[UserProfile] Exception in setSelectedState:', error);
     }
   };
 

@@ -1,4 +1,4 @@
-import { usePrivy, useLoginWithOAuth } from "@privy-io/react-auth";
+import { useUser, useAuth, useClerk } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, MapPin, Coins, Zap, Star } from "lucide-react";
 import React, { useState } from "react";
@@ -45,8 +45,9 @@ const getFlagImagePath = (stateId: string): string => {
 };
 
 const AuthButton = () => {
-  const { ready, authenticated, logout, user } = usePrivy();
-  const { initOAuth } = useLoginWithOAuth();
+  const { user, isLoaded } = useUser();
+  const { isSignedIn } = useAuth();
+  const { signOut, openSignIn } = useClerk();
   const [showProfile, setShowProfile] = useState(false);
   const [showStateSelectorDialog, setShowStateSelectorDialog] = useState(false);
   const { selectedState, stats, getLevel } = useUserProfile();
@@ -59,13 +60,15 @@ const AuthButton = () => {
 
   const handleLogin = async () => {
     try {
-      await initOAuth({ provider: 'twitter' });
+      await openSignIn({
+        redirectUrl: window.location.href,
+      });
     } catch (error) {
       console.error('Login failed:', error);
     }
   };
 
-  if (!ready) {
+  if (!isLoaded) {
     return (
       <Button
         variant="outline"
@@ -78,12 +81,15 @@ const AuthButton = () => {
     );
   }
 
-  if (authenticated && user) {
-    // Get user's X/Twitter account info
-    const twitterAccount = user.twitter;
-    const profilePicture = twitterAccount?.profilePictureUrl || null;
-    const displayName = twitterAccount?.username || twitterAccount?.name || user.email?.address?.split('@')[0] || "User";
-    const email = user.email?.address || null;
+  if (isSignedIn && user) {
+    // Get user's X/Twitter account info from external accounts
+    const twitterAccount = user.externalAccounts?.find(account => 
+      account.verification?.strategy === 'oauth_twitter' || 
+      (account as any).provider === 'oauth_x'
+    );
+    const profilePicture = user.imageUrl || null;
+    const displayName = twitterAccount?.username || user.username || user.firstName || user.emailAddresses[0]?.emailAddress?.split('@')[0] || "User";
+    const email = user.emailAddresses[0]?.emailAddress || null;
     const selectedStateData = states.find(state => state.id === selectedState);
 
     return (
@@ -113,7 +119,7 @@ const AuthButton = () => {
             <DialogHeader>
               <DialogTitle>Profile</DialogTitle>
               <DialogDescription>
-                You are signed in with X (Twitter)
+                Welcome to Peta Malaysia
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col items-center gap-4 py-4">
@@ -223,7 +229,7 @@ const AuthButton = () => {
               )}
 
               <button
-                onClick={() => logout()}
+                onClick={() => signOut()}
                 className="gap-2 w-full py-3 flex cursor-pointer justify-center items-center border rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors duration-200"
               >
                 <LogOut className="h-4 w-4" />
@@ -248,8 +254,8 @@ const AuthButton = () => {
       onClick={handleLogin}
       className="cursor-pointer flex items-center px-4 py-2 rounded-lg gap-2 bg-zinc-300 text-zinc-500 dark:text-zinc-300 hover:bg-zinc-400 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 shadow-md hover:shadow-lg transition-all"
     >
-      <XLogo className="h-5 w-5" />
-      <span className="font-medium">Sign in with X</span>
+      <User className="h-5 w-5" />
+      <span className="font-medium">Sign in</span>
     </button>
   );
 };
