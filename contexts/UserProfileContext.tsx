@@ -13,10 +13,10 @@ interface UserProfileContextType {
   showStateSelector: boolean;
   setShowStateSelector: (show: boolean) => void;
   stats: UserStats | null;
-  addPoints: (amount: number) => void;
-  addExp: (amount: number) => boolean;
-  addPointsAndExp: (pointsAmount: number, expAmount: number) => boolean;
-  deductPoints: (amount: number) => boolean;
+  addPoints: (amount: number) => Promise<void>;
+  addExp: (amount: number) => Promise<boolean>;
+  addPointsAndExp: (pointsAmount: number, expAmount: number) => Promise<boolean>;
+  deductPoints: (amount: number) => Promise<boolean>;
   getLevel: () => number;
   getExpForNextLevel: () => number;
   getExpProgress: () => number;
@@ -89,6 +89,12 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (error) {
         console.error('[UserProfile] Error loading user data:', error);
         console.error('[UserProfile] Error details:', JSON.stringify(error, null, 2));
+        
+        // Show user-friendly error
+        if (typeof window !== 'undefined') {
+          const errorMsg = error.message || 'Unable to load user data';
+          console.error('[UserProfile] Failed to sync with backend:', errorMsg);
+        }
         return;
       }
 
@@ -96,11 +102,16 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       if (!data || data.length === 0) {
         console.error('[UserProfile] No data returned from get_or_create_user');
+        
+        // Show user-friendly error
+        if (typeof window !== 'undefined') {
+          console.error('[UserProfile] Backend returned empty data. Please refresh the page.');
+        }
         return;
       }
 
       const userData = data[0];
-      console.log('[UserProfile] User data loaded:', userData);
+      console.log('[UserProfile] User data loaded successfully:', userData);
       
       setInternalUserId(userData.user_id);
       setSelectedStateInternal(userData.selected_state);
@@ -109,7 +120,7 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
         exp: userData.exp
       });
 
-      console.log('[UserProfile] State set - internalUserId:', userData.user_id, 'selectedState:', userData.selected_state);
+      console.log('[UserProfile] State set - internalUserId:', userData.user_id, 'selectedState:', userData.selected_state, 'points:', userData.points, 'exp:', userData.exp);
 
       // Show state selector if no state selected (for new users)
       if (!userData.selected_state && userData.is_new_user) {
@@ -118,6 +129,12 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
     } catch (error) {
       console.error('[UserProfile] Exception in loadUserData:', error);
+      
+      // Show user-friendly error
+      if (typeof window !== 'undefined') {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        console.error('[UserProfile] Failed to load user profile:', errorMsg);
+      }
     }
   };
 
@@ -165,77 +182,155 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   };
 
-  const addPoints = (amount: number) => {
+  const addPoints = async (amount: number) => {
     if (!user || !stats) return;
-    const userId = user.id;
-    setStats(prevStats => {
-      if (!prevStats) return prevStats;
-      const newStats = { ...prevStats, points: prevStats.points + amount };
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(`user_stats_${userId}`, JSON.stringify(newStats));
+    
+    try {
+      // Optimistically update UI
+      setStats(prevStats => {
+        if (!prevStats) return prevStats;
+        return { ...prevStats, points: prevStats.points + amount };
+      });
+
+      // Sync to backend
+      const { error } = await supabase.rpc('update_user_points_exp', {
+        p_clerk_user_id: user.id,
+        p_points_delta: amount,
+        p_exp_delta: 0
+      });
+
+      if (error) {
+        console.error('[UserProfile] Error updating points:', error);
+        // Revert on error
+        setStats(prevStats => {
+          if (!prevStats) return prevStats;
+          return { ...prevStats, points: prevStats.points - amount };
+        });
       }
-      return newStats;
-    });
+    } catch (error) {
+      console.error('[UserProfile] Exception in addPoints:', error);
+    }
   };
 
-  const addExp = (amount: number): boolean => {
+  const addExp = async (amount: number): Promise<boolean> => {
     if (!user || !stats) return false;
-    const userId = user.id;
+    
     const oldLevel = calculateLevel(stats.exp);
     const newExp = stats.exp + amount;
     const newLevel = calculateLevel(newExp);
     const leveledUp = newLevel > oldLevel;
     
-    setStats(prevStats => {
-      if (!prevStats) return prevStats;
-      const newStats = { ...prevStats, exp: newExp };
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(`user_stats_${userId}`, JSON.stringify(newStats));
+    try {
+      // Optimistically update UI
+      setStats(prevStats => {
+        if (!prevStats) return prevStats;
+        return { ...prevStats, exp: newExp };
+      });
+
+      // Sync to backend
+      const { error } = await supabase.rpc('update_user_points_exp', {
+        p_clerk_user_id: user.id,
+        p_points_delta: 0,
+        p_exp_delta: amount
+      });
+
+      if (error) {
+        console.error('[UserProfile] Error updating exp:', error);
+        // Revert on error
+        setStats(prevStats => {
+          if (!prevStats) return prevStats;
+          return { ...prevStats, exp: prevStats.exp };
+        });
+        return false;
       }
-      return newStats;
-    });
+    } catch (error) {
+      console.error('[UserProfile] Exception in addExp:', error);
+      return false;
+    }
     
     return leveledUp;
   };
 
-  const addPointsAndExp = (pointsAmount: number, expAmount: number): boolean => {
+  const addPointsAndExp = async (pointsAmount: number, expAmount: number): Promise<boolean> => {
     if (!user || !stats) return false;
-    const userId = user.id;
+    
     const oldLevel = calculateLevel(stats.exp);
     const newExp = stats.exp + expAmount;
     const newLevel = calculateLevel(newExp);
     const leveledUp = newLevel > oldLevel;
     
-    setStats(prevStats => {
-      if (!prevStats) return prevStats;
-      const newStats = {
-        ...prevStats,
-        points: prevStats.points + pointsAmount,
-        exp: newExp,
-      };
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(`user_stats_${userId}`, JSON.stringify(newStats));
+    try {
+      // Optimistically update UI
+      setStats(prevStats => {
+        if (!prevStats) return prevStats;
+        return {
+          ...prevStats,
+          points: prevStats.points + pointsAmount,
+          exp: newExp,
+        };
+      });
+
+      // Sync to backend
+      const { error } = await supabase.rpc('update_user_points_exp', {
+        p_clerk_user_id: user.id,
+        p_points_delta: pointsAmount,
+        p_exp_delta: expAmount
+      });
+
+      if (error) {
+        console.error('[UserProfile] Error updating points and exp:', error);
+        // Revert on error
+        setStats(prevStats => {
+          if (!prevStats) return prevStats;
+          return {
+            ...prevStats,
+            points: prevStats.points - pointsAmount,
+            exp: prevStats.exp,
+          };
+        });
+        return false;
       }
-      return newStats;
-    });
+    } catch (error) {
+      console.error('[UserProfile] Exception in addPointsAndExp:', error);
+      return false;
+    }
     
     return leveledUp;
   };
 
-  const deductPoints = (amount: number): boolean => {
+  const deductPoints = async (amount: number): Promise<boolean> => {
     if (!user || !stats) return false;
     if (stats.points < amount) return false;
     
-    const userId = user.id;
-    setStats(prevStats => {
-      if (!prevStats) return prevStats;
-      const newStats = { ...prevStats, points: prevStats.points - amount };
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(`user_stats_${userId}`, JSON.stringify(newStats));
+    try {
+      // Optimistically update UI
+      setStats(prevStats => {
+        if (!prevStats) return prevStats;
+        return { ...prevStats, points: prevStats.points - amount };
+      });
+
+      // Sync to backend
+      const { error } = await supabase.rpc('update_user_points_exp', {
+        p_clerk_user_id: user.id,
+        p_points_delta: -amount,
+        p_exp_delta: 0
+      });
+
+      if (error) {
+        console.error('[UserProfile] Error deducting points:', error);
+        // Revert on error
+        setStats(prevStats => {
+          if (!prevStats) return prevStats;
+          return { ...prevStats, points: prevStats.points + amount };
+        });
+        return false;
       }
-      return newStats;
-    });
-    return true;
+
+      return true;
+    } catch (error) {
+      console.error('[UserProfile] Exception in deductPoints:', error);
+      return false;
+    }
   };
 
   const getLevel = (): number => {

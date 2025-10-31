@@ -239,6 +239,66 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Step 7: Add function to update user points and exp
+CREATE OR REPLACE FUNCTION update_user_points_exp(
+  p_clerk_user_id TEXT,
+  p_points_delta INTEGER DEFAULT 0,
+  p_exp_delta INTEGER DEFAULT 0
+)
+RETURNS TABLE (
+  success BOOLEAN,
+  new_points INTEGER,
+  new_exp INTEGER,
+  leveled_up BOOLEAN,
+  new_level INTEGER
+) AS $$
+DECLARE
+  v_user_id UUID;
+  v_old_exp INTEGER;
+  v_new_exp INTEGER;
+  v_new_points INTEGER;
+  v_old_level INTEGER;
+  v_new_level INTEGER;
+BEGIN
+  -- Get user data
+  SELECT id, exp, points INTO v_user_id, v_old_exp, v_new_points
+  FROM users
+  WHERE clerk_user_id = p_clerk_user_id;
+
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'User not found';
+  END IF;
+
+  -- Calculate new values
+  v_new_points := v_new_points + p_points_delta;
+  v_new_exp := v_old_exp + p_exp_delta;
+  
+  -- Ensure non-negative values
+  v_new_points := GREATEST(v_new_points, 0);
+  v_new_exp := GREATEST(v_new_exp, 0);
+
+  -- Calculate levels
+  v_old_level := FLOOR(v_old_exp / 1000) + 1;
+  v_new_level := FLOOR(v_new_exp / 1000) + 1;
+
+  -- Update user stats
+  UPDATE users
+  SET 
+    points = v_new_points,
+    exp = v_new_exp,
+    updated_at = NOW()
+  WHERE id = v_user_id;
+
+  -- Return results
+  RETURN QUERY SELECT 
+    TRUE,
+    v_new_points,
+    v_new_exp,
+    v_new_level > v_old_level,
+    v_new_level;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Add comment to document the change
 COMMENT ON COLUMN users.clerk_user_id IS 'User ID from Clerk authentication (formerly privy_user_id)';
 

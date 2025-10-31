@@ -352,7 +352,8 @@ const PollsPage = () => {
         return;
       }
 
-      const result = data as any;
+      // RPC functions that return TABLE return an array
+      const result = (Array.isArray(data) && data.length > 0 ? data[0] : data) as any;
 
       // 4. Show success message immediately
       if (result.leveled_up) {
@@ -609,7 +610,8 @@ const PollsPage = () => {
         return;
       }
 
-      const result = data as any;
+      // RPC functions that return TABLE return an array
+      const result = (Array.isArray(data) && data.length > 0 ? data[0] : data) as any;
 
       // Trigger confetti effect
       confetti({
