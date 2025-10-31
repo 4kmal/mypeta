@@ -610,8 +610,8 @@ const PollsPage = () => {
         return;
       }
 
-      // RPC functions that return TABLE return an array
-      const result = (Array.isArray(data) && data.length > 0 ? data[0] : data) as any;
+      // RPC function returns JSON directly
+      const result = data as any;
 
       // Trigger confetti effect
       confetti({
