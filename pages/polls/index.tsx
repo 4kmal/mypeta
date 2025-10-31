@@ -130,14 +130,16 @@ const PollsPage = () => {
   }, [isSignedIn, internalUserId]);
 
   // Load poll results from Supabase using optimized function
-  const loadPollResults = async () => {
+  const loadPollResults = async (showLoading: boolean = true) => {
     if (allPolls.length === 0) {
       setIsLoadingResults(false);
       return;
     }
 
     try {
-      setIsLoadingResults(true);
+      if (showLoading) {
+        setIsLoadingResults(true);
+      }
       
       // Call the optimized PostgreSQL function that returns all results in one query
       const { data, error } = await supabase.rpc('get_all_poll_results');
@@ -420,9 +422,9 @@ const PollsPage = () => {
         });
       }
 
-      // 5. Sync with server in background (don't await)
+      // 5. Sync with server in background (don't await, no loading state)
       Promise.all([
-        loadPollResults(),
+        loadPollResults(false), // false = don't show loading skeleton
         refreshUserData(),
         loadUserVotes()
       ]).catch(err => console.error('Background sync error:', err));
