@@ -19,7 +19,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Tooltip,
@@ -61,6 +60,21 @@ interface IndividualVote {
   timestamp: number;
 }
 
+// 60 most used emojis globally
+const POLL_EMOJIS = [
+  // Numbers (for poll options)
+  '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟',
+  // Top emotions & faces (most used globally)
+  '😂', '❤️', '🥰', '😍', '😊', '😘', '😭', '😔', '😩', '😡',
+  '🤔', '😅', '🙄', '😳', '🥺', '😎', '🤗', '🤩', '😱', '🤯',
+  // Hand gestures & reactions
+  '👍', '👎', '👏', '🙏', '💪', '✌️', '🤝', '👌', '🙌', '🤞',
+  // Hearts & symbols
+  '💔', '💕', '💖', '💗', '💙', '💚', '💛', '🧡', '💜', '🖤',
+  // Popular symbols & objects
+  '🔥', '✨', '⭐', '💯', '✅', '❌', '⚠️', '💥', '🎉', '🎊'
+];
+
 const PollsPage = () => {
   const { user, isSignedIn } = useUser();
   const { 
@@ -84,9 +98,11 @@ const PollsPage = () => {
     question: '',
     description: '',
     category: 'food' as Poll['category'],
-    options: [{ label: '', emoji: '' }, { label: '', emoji: '' }],
+    options: [{ label: '', emoji: '1️⃣' }, { label: '', emoji: '2️⃣' }],
     endDate: '',
   });
+  const [hasEndDate, setHasEndDate] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState<number | null>(null);
   const [selectedPollForDetails, setSelectedPollForDetails] = useState<Poll | null>(null);
   const [isLoadingPolls, setIsLoadingPolls] = useState(true);
   const [isLoadingResults, setIsLoadingResults] = useState(true);
@@ -688,9 +704,11 @@ const PollsPage = () => {
         question: '',
         description: '',
         category: 'food',
-        options: [{ label: '', emoji: '' }, { label: '', emoji: '' }],
+        options: [{ label: '', emoji: '1️⃣' }, { label: '', emoji: '2️⃣' }],
         endDate: '',
       });
+      setHasEndDate(false);
+      setShowEmojiPicker(null);
       setShowCreatePoll(false);
       setIsCreatingPoll(false);
 
@@ -888,36 +906,125 @@ const PollsPage = () => {
                           <option value="social">Social</option>
                         </select>
 
-                        <input
-                          type="datetime-local"
-                          value={newPoll.endDate}
-                          onChange={(e) => setNewPoll({ ...newPoll, endDate: e.target.value })}
-                          placeholder="Optional end date"
-                          className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                        />
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                          Optional: Set when this poll should end. Leave empty for no end date.
-                        </p>
+                        <div className="space-y-3">
+                          <label className="flex items-start gap-3 cursor-pointer group">
+                            <div className="relative flex items-center justify-center mt-0.5">
+                              <input
+                                type="checkbox"
+                                checked={hasEndDate}
+                                onChange={(e) => {
+                                  setHasEndDate(e.target.checked);
+                                  if (!e.target.checked) {
+                                    setNewPoll({ ...newPoll, endDate: '' });
+                                  }
+                                }}
+                                className="sr-only peer"
+                              />
+                              <div className="w-5 h-5 border-2 border-zinc-300 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-800 peer-checked:bg-emerald-500 peer-checked:border-emerald-500 peer-focus:ring-2 peer-focus:ring-emerald-500/30 transition-all duration-200 flex items-center justify-center group-hover:border-emerald-400 dark:group-hover:border-emerald-500">
+                                <svg 
+                                  className={`w-3 h-3 text-white transition-all duration-200 ${hasEndDate ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`}
+                                  fill="none" 
+                                  stroke="currentColor" 
+                                  viewBox="0 0 24 24"
+                                  strokeWidth="3"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                              </div>
+                            </div>
+                            <div className="flex-1 -mt-0.5">
+                              <div className="flex items-center gap-2">
+                                <Calendar className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
+                                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                                  Set an end date for this poll
+                                </span>
+                              </div>
+                              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                                Schedule when voting should automatically close
+                              </p>
+                            </div>
+                          </label>
+                          
+                          {hasEndDate && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.2 }}
+                              className="pl-8"
+                            >
+                              <div className="space-y-2">
+                                <input
+                                  type="datetime-local"
+                                  value={newPoll.endDate}
+                                  onChange={(e) => setNewPoll({ ...newPoll, endDate: e.target.value })}
+                                  placeholder="Select end date"
+                                  className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                                />
+                                <div className="flex items-start gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                                  <Clock className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                                  <span>The poll will automatically close at this date and time.</span>
+                                </div>
+                              </div>
+                            </motion.div>
+                          )}
+                        </div>
 
                       <div className="space-y-4 mt-4">
                         {newPoll.options.map((option, index) => (
                           <div key={index}>
-                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
                               Poll Option {index + 1}
                             </label>
                             <div className="flex gap-2">
-                              <input
-                                type="text"
-                                value={option.emoji}
-                                onChange={(e) => {
-                                  const newOptions = [...newPoll.options];
-                                  newOptions[index].emoji = e.target.value;
-                                  setNewPoll({ ...newPoll, options: newOptions });
-                                }}
-                                placeholder="Emoji"
-                                maxLength={2}
-                                className="w-20 px-3 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 text-center focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                              />
+                              {/* Emoji Picker Button */}
+                              <div className="relative">
+                                <button
+                                  type="button"
+                                  onClick={() => setShowEmojiPicker(showEmojiPicker === index ? null : index)}
+                                  className="cursor-pointer w-16 h-11 px-3 py-2 border-2 border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 hover:border-emerald-400 dark:hover:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-2xl flex items-center justify-center transition-all"
+                                >
+                                  {option.emoji || ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'][index] || '❓'}
+                                </button>
+                                
+                                {/* Emoji Picker Dropdown */}
+                                {showEmojiPicker === index && (
+                                  <motion.div
+                                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                    className="absolute z-50 mt-2 p-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg shadow-xl w-72 max-h-64 overflow-y-auto"
+                                  >
+                                    <div className="grid grid-cols-8 gap-1">
+                                      {POLL_EMOJIS.map((emoji, emojiIndex) => (
+                                        <button
+                                          key={emojiIndex}
+                                          type="button"
+                                          onClick={() => {
+                                            const newOptions = [...newPoll.options];
+                                            newOptions[index].emoji = emoji;
+                                            setNewPoll({ ...newPoll, options: newOptions });
+                                            setShowEmojiPicker(null);
+                                          }}
+                                          className="w-8 h-8 text-2xl hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded transition-colors flex items-center justify-center"
+                                        >
+                                          {emoji}
+                                        </button>
+                                      ))}
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowEmojiPicker(null)}
+                                      className="cursor-pointer w-full mt-3 px-3 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 border border-zinc-200 dark:border-zinc-700 rounded hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition-colors"
+                                    >
+                                      Close
+                                    </button>
+                                  </motion.div>
+                                )}
+                              </div>
+                              
                               <input
                                 type="text"
                                 value={option.label}
@@ -934,79 +1041,20 @@ const PollsPage = () => {
                         ))}
                       </div>
                     </div>
-
-                    {/* Separator */}
-                    <Separator className="bg-zinc-300 dark:bg-zinc-700" />
-
-                    {/* Preview Section */}
-                    <div className="space-y-1">
-                      <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide">
-                        Preview
-                      </h4>
-                      <div className="bg-zinc-50 dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
-                        {/* Poll Header Preview */}
-                        <div className="mb-4">
-                          <div className="flex items-start justify-between mb-2">
-                            <h3 className="text-lg font-bold text-zinc-800 dark:text-zinc-100 flex-1">
-                              {newPoll.question || 'Your poll question will appear here'}
-                            </h3>
-                            {newPoll.endDate && (
-                              <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                new Date(newPoll.endDate) > new Date()
-                                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                                  : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                              }`}>
-                                {new Date(newPoll.endDate) > new Date() ? 'Live' : 'Ended'}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center justify-between">
-                            {newPoll.description && (
-                              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                                {newPoll.description}
-                              </p>
-                            )}
-                            {newPoll.endDate && (
-                              <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400 ml-2 flex-shrink-0">
-                                <Calendar className="h-3 w-3" />
-                                <span>Ends: {formatEndDate(newPoll.endDate)}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Options Preview */}
-                        <div className="space-y-3">
-                          {newPoll.options.map((option, optionIndex) => (
-                            <div
-                              key={optionIndex}
-                              className="w-full rounded-lg border-2 border-zinc-300 dark:border-zinc-700 transition-all"
-                            >
-                              <div className="px-4 py-3 flex items-center gap-3">
-                                <span className="text-2xl">{option.emoji || '❓'}</span>
-                                <span className="font-medium text-zinc-800 dark:text-zinc-200">
-                                  {option.label || `Option ${optionIndex + 1} label`}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
                   </div>
 
                   <DialogFooter className='mb-4'>
                     <button
                       onClick={() => setShowCreatePoll(false)}
                       disabled={isCreatingPoll}
-                      className="px-6 py-3 bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 text-zinc-800 dark:text-zinc-100 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="cursor-pointer px-6 py-3 bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 text-zinc-800 dark:text-zinc-100 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleCreatePoll}
                       disabled={isCreatingPoll}
-                      className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="cursor-pointer px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {isCreatingPoll ? 'Creating poll...' : 'Create Poll (Cost: 200 points)'}
                     </button>
