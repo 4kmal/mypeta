@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate OG Image</title>
+</head>
+<body>
+    <h2>Click Generate to create og-image.png</h2>
+    <button onclick="generateImage()">Generate OG Image</button>
+    <br><br>
+    <canvas id="canvas" width="1200" height="630"></canvas>
+    
+    <script>
+        function generateImage() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Create gradient
+            const gradient = ctx.createLinearGradient(0, 0, 1200, 630);
+            gradient.addColorStop(0, '#10b981');
+            gradient.addColorStop(1, '#059669');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1200, 630);
+            
+            // Decorative circles
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.beginPath();
+            ctx.arc(1050, 100, 150, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.arc(150, 530, 200, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Top branding
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 72px Arial';
+            ctx.fillText('MYPETA.AI', 100, 120);
+            
+            // Flag and subtitle
+            ctx.font = '36px Arial';
+            ctx.textAlign = 'right';
+            ctx.fillText('🇲🇾 Malaysian Poll', 1100, 120);
+            
+            // Divider line
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(100, 160);
+            ctx.lineTo(1100, 160);
+            ctx.stroke();
+            
+            // Main title
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 64px Arial';
+            ctx.fillText('Malaysian Polls', 600, 280);
+            
+            // Subtitle
+            ctx.font = '36px Arial';
+            ctx.globalAlpha = 0.9;
+            ctx.fillText('Vote on viral and controversial topics', 600, 350);
+            
+            // CTA
+            ctx.globalAlpha = 1;
+            ctx.font = '600 42px Arial';
+            ctx.fillText('Your Voice Matters! 🗳️', 600, 420);
+            
+            // Bottom text
+            ctx.textAlign = 'left';
+            ctx.font = '28px Arial';
+            ctx.globalAlpha = 0.8;
+            ctx.fillText('By the people, for the people', 100, 550);
+            
+            // Website
+            ctx.textAlign = 'right';
+            ctx.fillText('www.mypeta.ai', 1100, 550);
+            
+            // Download
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'og-image.png';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                alert('og-image.png downloaded! Save it to /public/images/');
+            });
+        }
+    </script>
+</body>
+</html>
+

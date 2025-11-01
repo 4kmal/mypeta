@@ -14,19 +14,19 @@ export default function Document() {
         
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://petamalaysia.com/" />
+        <meta property="og:url" content="https://www.mypeta.ai/" />
         <meta property="og:title" content="My Peta - Malaysia Data Visualization" />
         <meta property="og:description" content="Explore interactive data visualization for Malaysian states including population, income, crime, water consumption, and household expenditure." />
-        <meta property="og:image" content="/images/og-image.png" />
+        <meta property="og:image" content="https://www.mypeta.ai/images/og-image.png" />
         <meta property="og:site_name" content="My Peta" />
         <meta property="og:locale" content="en_US" />
         
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:url" content="https://petamalaysia.com/" />
+        <meta name="twitter:url" content="https://www.mypeta.ai/" />
         <meta name="twitter:title" content="My Peta - Malaysia Data Visualization" />
         <meta name="twitter:description" content="Explore interactive data visualization for Malaysian states including population, income, crime, water consumption, and household expenditure." />
-        <meta name="twitter:image" content="/images/og-image.png" />
+        <meta name="twitter:image" content="https://www.mypeta.ai/images/og-image.png" />
         
         {/* Favicon */}
         <link rel="icon" href="/favicon.ico" />
@@ -41,7 +41,7 @@ export default function Document() {
         <meta name="geo.placename" content="Malaysia" />
         
         {/* Canonical URL */}
-        <link rel="canonical" href="https://petamalaysia.com/" />
+        <link rel="canonical" content="https://www.mypeta.ai/" />
       </Head>
       <body className="antialiased bg-zinc-100 dark:bg-zinc-950">
         <Main />
