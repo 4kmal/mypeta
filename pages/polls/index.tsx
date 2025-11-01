@@ -90,6 +90,7 @@ const PollsPage = () => {
   const [selectedPollForDetails, setSelectedPollForDetails] = useState<Poll | null>(null);
   const [isLoadingPolls, setIsLoadingPolls] = useState(true);
   const [isLoadingResults, setIsLoadingResults] = useState(true);
+  const [isCreatingPoll, setIsCreatingPoll] = useState(false);
 
   // Load user votes from Supabase
   const loadUserVotes = async () => {
@@ -635,6 +636,8 @@ const PollsPage = () => {
     }
 
     try {
+      setIsCreatingPoll(true);
+      
       const options = newPoll.options.map(o => ({
         label: o.label.trim(),
         emoji: o.emoji.trim()
@@ -659,6 +662,7 @@ const PollsPage = () => {
         } else {
           toast.error('Failed to create poll: ' + error.message);
         }
+        setIsCreatingPoll(false);
         return;
       }
 
@@ -688,6 +692,7 @@ const PollsPage = () => {
         endDate: '',
       });
       setShowCreatePoll(false);
+      setIsCreatingPoll(false);
 
       // Show success message
       if (result.leveled_up) {
@@ -706,6 +711,7 @@ const PollsPage = () => {
     } catch (error: any) {
       console.error('Error creating poll:', error);
       toast.error('Failed to create poll: ' + error.message);
+      setIsCreatingPoll(false);
     }
   };
 
@@ -992,15 +998,17 @@ const PollsPage = () => {
                   <DialogFooter className='mb-4'>
                     <button
                       onClick={() => setShowCreatePoll(false)}
-                      className="px-6 py-3 bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 text-zinc-800 dark:text-zinc-100 rounded-lg font-medium transition-colors"
+                      disabled={isCreatingPoll}
+                      className="px-6 py-3 bg-zinc-200 dark:bg-zinc-700 hover:bg-zinc-300 dark:hover:bg-zinc-600 text-zinc-800 dark:text-zinc-100 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleCreatePoll}
-                      className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors"
+                      disabled={isCreatingPoll}
+                      className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Create Poll (Cost: 200 points)
+                      {isCreatingPoll ? 'Creating poll...' : 'Create Poll (Cost: 200 points)'}
                     </button>
                   </DialogFooter>
                 </DialogContent>
