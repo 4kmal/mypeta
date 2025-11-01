@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { useState, useEffect, useRef } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useUserProfile } from '@/contexts/UserProfileContext';
@@ -76,6 +77,7 @@ const POLL_EMOJIS = [
 ];
 
 const PollsPage = () => {
+  const router = useRouter();
   const { user, isSignedIn } = useUser();
   const {
     selectedState,
@@ -108,7 +110,7 @@ const PollsPage = () => {
   const [isLoadingResults, setIsLoadingResults] = useState(true);
   const [isCreatingPoll, setIsCreatingPoll] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState<string | null>(null);
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [generatingImageFor, setGeneratingImageFor] = useState<'download' | 'native' | null>(null);
   const pollImageRef = useRef<HTMLDivElement>(null);
 
   // Load user votes from Supabase
@@ -748,7 +750,7 @@ const PollsPage = () => {
     return `Vote on: ${poll.question}\n\nWhat do you think? Cast your vote on My Peta! 🇲🇾`;
   };
 
-  const generatePollImage = async (poll: Poll): Promise<Blob | null> => {
+  const generatePollImage = async (poll: Poll, source: 'download' | 'native'): Promise<Blob | null> => {
     if (!pollImageRef.current) {
       console.error('Poll image ref not available');
       toast.error('Image preview not ready', {
@@ -758,7 +760,7 @@ const PollsPage = () => {
     }
 
     try {
-      setIsGeneratingImage(true);
+      setGeneratingImageFor(source);
 
       // Wait for DOM to be ready
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -801,7 +803,7 @@ const PollsPage = () => {
       // Convert canvas to blob
       return new Promise((resolve) => {
         canvas.toBlob((blob) => {
-          setIsGeneratingImage(false);
+          setGeneratingImageFor(null);
           if (!blob) {
             console.error('Failed to create blob');
             toast.error('Failed to create image file');
@@ -814,7 +816,7 @@ const PollsPage = () => {
       });
     } catch (error) {
       console.error('Error generating image:', error);
-      setIsGeneratingImage(false);
+      setGeneratingImageFor(null);
       toast.error('Failed to generate image', {
         description: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -831,7 +833,7 @@ const PollsPage = () => {
     // Handle download separately
     if (platform === 'download') {
       try {
-        const imageBlob = await generatePollImage(poll);
+        const imageBlob = await generatePollImage(poll, 'download');
         if (!imageBlob) {
           toast.error('Failed to generate image');
           return;
@@ -869,7 +871,7 @@ const PollsPage = () => {
       }
 
       try {
-        const imageBlob = await generatePollImage(poll);
+        const imageBlob = await generatePollImage(poll, 'native');
         if (imageBlob) {
           const file = new File([imageBlob], 'poll.png', { type: 'image/png' });
 
@@ -935,6 +937,42 @@ const PollsPage = () => {
       <Head>
         <title>Malaysian Polls - My Peta</title>
         <meta name="description" content="Vote on viral and controversial topics about Malaysia" />
+        
+        {/* Dynamic OG tags based on poll parameter */}
+        {(() => {
+          const pollId = router.query.poll as string;
+          const currentPoll = allPolls.find(p => p.id === pollId);
+          
+          if (currentPoll) {
+            const pollUrl = typeof window !== 'undefined' ? window.location.href : `https://www.mypeta.ai/polls?poll=${pollId}`;
+            const ogImage = typeof window !== 'undefined' 
+              ? `${window.location.origin}/images/og-image.png` 
+              : 'https://www.mypeta.ai/images/og-image.png';
+            
+            return (
+              <>
+                {/* Open Graph / Facebook */}
+                <meta property="og:type" content="article" />
+                <meta property="og:url" content={pollUrl} />
+                <meta property="og:title" content={`${currentPoll.question} - Malaysian Poll`} />
+                <meta property="og:description" content={currentPoll.description || 'Vote on this Malaysian poll. Your voice matters! 🇲🇾'} />
+                <meta property="og:image" content={ogImage} />
+                <meta property="og:image:width" content="1200" />
+                <meta property="og:image:height" content="630" />
+                <meta property="og:site_name" content="My Peta" />
+                
+                {/* Twitter */}
+                <meta name="twitter:card" content="summary_large_image" />
+                <meta name="twitter:url" content={pollUrl} />
+                <meta name="twitter:title" content={`${currentPoll.question} - Malaysian Poll`} />
+                <meta name="twitter:description" content={currentPoll.description || 'Vote on this Malaysian poll. Your voice matters! 🇲🇾'} />
+                <meta name="twitter:image" content={ogImage} />
+              </>
+            );
+          }
+          
+          return null;
+        })()}
       </Head>
 
       <div className="min-h-screen bg-zinc-100 dark:bg-[#111114] pb-12">
@@ -1455,7 +1493,7 @@ const PollsPage = () => {
 
           {/* Share Dialog */}
           <Dialog open={showShareDialog !== null} onOpenChange={(open) => !open && setShowShareDialog(null)}>
-            <DialogContent className="w-full lg:max-w-md max-h-[90vh] overflow-y-auto mx-4 mx-auto">
+            <DialogContent className="w-full lg:max-w-md max-h-[90vh] overflow-y-auto overflow-x-hidden">
               <DialogHeader>
                 <DialogTitle className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
                   Share Poll
@@ -1465,7 +1503,7 @@ const PollsPage = () => {
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-6 py-4">
+              <div className="space-y-6 py-4 overflow-x-hidden">
                 {showShareDialog && (() => {
                   const poll = allPolls.find(p => p.id === showShareDialog);
                   if (!poll) return null;
@@ -1485,6 +1523,7 @@ const PollsPage = () => {
                           overflow: 'hidden',
                           boxSizing: 'border-box',
                           width: '100%',
+                          maxWidth: '100%',
                           minHeight: '300px',
                           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
                         }}
@@ -1599,6 +1638,7 @@ const PollsPage = () => {
                                     }}>
                                       <span style={{
                                         fontSize: '20px',
+                                        paddingBottom: '6px',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center'
@@ -1688,11 +1728,11 @@ const PollsPage = () => {
                         </div>
                         <button
                           onClick={() => handleShare(poll, 'download')}
-                          disabled={isGeneratingImage}
+                          disabled={generatingImageFor === 'download'}
                           className="cursor-pointer w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Download className="h-5 w-5" />
-                          {isGeneratingImage ? 'Generating Image...' : 'Download Image'}
+                          {generatingImageFor === 'download' ? 'Generating Image...' : 'Download Image'}
                         </button>
                       </div>
 
@@ -1708,17 +1748,21 @@ const PollsPage = () => {
                         </div>
 
                         {/* Social Share Buttons - Circular */}
-                        <div className="flex items-center justify-center gap-3 pt-2">
+                        <div className="flex items-center justify-center gap-3 pt-2 flex-wrap max-w-full">
                           {/* Native Share */}
                           {typeof navigator !== 'undefined' && 'share' in navigator && (
                             <button
                               onClick={() => handleShare(poll, 'native')}
-                              disabled={isGeneratingImage}
+                              disabled={generatingImageFor === 'native'}
                               className="cursor-pointer group relative"
                               title="Share (Native)"
                             >
                               <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 flex items-center justify-center transition-all transform hover:scale-110 shadow-lg">
-                                <Share className="w-6 h-6 text-white" />
+                                {generatingImageFor === 'native' ? (
+                                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <Share className="w-6 h-6 text-white" />
+                                )}
                               </div>
                             </button>
                           )}
@@ -1726,7 +1770,6 @@ const PollsPage = () => {
                           {/* Twitter/X */}
                           <button
                             onClick={() => handleShare(poll, 'twitter')}
-                            disabled={isGeneratingImage}
                             className="cursor-pointer group relative"
                             title="Share on X (Twitter)"
                           >
@@ -1740,7 +1783,6 @@ const PollsPage = () => {
                           {/* Facebook */}
                           <button
                             onClick={() => handleShare(poll, 'facebook')}
-                            disabled={isGeneratingImage}
                             className="cursor-pointer group relative"
                             title="Share on Facebook"
                           >
@@ -1754,7 +1796,6 @@ const PollsPage = () => {
                           {/* WhatsApp */}
                           <button
                             onClick={() => handleShare(poll, 'whatsapp')}
-                            disabled={isGeneratingImage}
                             className="cursor-pointer group relative"
                             title="Share on WhatsApp"
                           >
