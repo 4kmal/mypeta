@@ -1,16 +1,16 @@
 import Head from 'next/head';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { useUserProfile } from '@/contexts/UserProfileContext';
-import { POLLS_DATA, Poll } from '@/data/polls';
+import { Poll } from '@/data/polls';
 import { supabase } from '@/lib/supabase';
 import PageHeader from '@/components/PageHeader';
 import Footer from '@/components/Footer';
-import FooterBranding from '@/components/FooterBranding';
 import { motion } from 'framer-motion';
-import { TrendingUp, Lock, CheckCircle, AlertCircle, Plus, Coins, Zap, Star, Clock, Calendar, Info, HelpCircle } from 'lucide-react';
+import { TrendingUp, Lock, CheckCircle, AlertCircle, Plus, Coins, Zap, Star, Clock, Calendar, Info, HelpCircle, Share2, X, Download, ArrowUpFromLine, Copy, Share } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
+import html2canvas from 'html2canvas';
 import {
   Dialog,
   DialogContent,
@@ -77,14 +77,14 @@ const POLL_EMOJIS = [
 
 const PollsPage = () => {
   const { user, isSignedIn } = useUser();
-  const { 
-    selectedState, 
-    stats, 
-    addPoints, 
-    addExp, 
+  const {
+    selectedState,
+    stats,
+    addPoints,
+    addExp,
     addPointsAndExp,
-    deductPoints, 
-    getLevel, 
+    deductPoints,
+    getLevel,
     getExpProgress,
     internalUserId,
     refreshUserData
@@ -107,6 +107,9 @@ const PollsPage = () => {
   const [isLoadingPolls, setIsLoadingPolls] = useState(true);
   const [isLoadingResults, setIsLoadingResults] = useState(true);
   const [isCreatingPoll, setIsCreatingPoll] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState<string | null>(null);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const pollImageRef = useRef<HTMLDivElement>(null);
 
   // Load user votes from Supabase
   const loadUserVotes = async () => {
@@ -157,7 +160,7 @@ const PollsPage = () => {
       if (showLoading) {
         setIsLoadingResults(true);
       }
-      
+
       // Call the optimized PostgreSQL function that returns all results in one query
       const { data, error } = await supabase.rpc('get_all_poll_results');
 
@@ -246,7 +249,7 @@ const PollsPage = () => {
   const loadPolls = async () => {
     try {
       setIsLoadingPolls(true);
-      
+
       const { data: pollsData, error: pollsError } = await supabase
         .from('polls')
         .select('*')
@@ -409,13 +412,13 @@ const PollsPage = () => {
           delete newVotes[pollId];
           return newVotes;
         });
-        
+
         if (error.message.includes('already voted')) {
           toast.info('You have already voted on this poll');
         } else {
           toast.error('Failed to cast vote: ' + error.message);
         }
-        
+
         // Reload to get accurate data
         loadPollResults();
         return;
@@ -454,8 +457,8 @@ const PollsPage = () => {
     }
   };
 
-  const filteredPolls = selectedCategory === 'all' 
-    ? allPolls 
+  const filteredPolls = selectedCategory === 'all'
+    ? allPolls
     : allPolls.filter(poll => poll.category === selectedCategory);
 
   const categories = [
@@ -653,7 +656,7 @@ const PollsPage = () => {
 
     try {
       setIsCreatingPoll(true);
-      
+
       const options = newPoll.options.map(o => ({
         label: o.label.trim(),
         emoji: o.emoji.trim()
@@ -733,6 +736,199 @@ const PollsPage = () => {
     }
   };
 
+  // Share functionality
+  const getShareUrl = (pollId: string) => {
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/polls?poll=${pollId}`;
+    }
+    return '';
+  };
+
+  const getShareText = (poll: Poll) => {
+    return `Vote on: ${poll.question}\n\nWhat do you think? Cast your vote on My Peta! 🇲🇾`;
+  };
+
+  const generatePollImage = async (poll: Poll): Promise<Blob | null> => {
+    if (!pollImageRef.current) {
+      console.error('Poll image ref not available');
+      toast.error('Image preview not ready', {
+        description: 'Please wait a moment and try again'
+      });
+      return null;
+    }
+
+    try {
+      setIsGeneratingImage(true);
+
+      // Wait for DOM to be ready
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      console.log('Starting image generation with html2canvas...');
+
+      // Use html2canvas with settings optimized for inline styles
+      const canvas = await html2canvas(pollImageRef.current, {
+        backgroundColor: null, // Transparent background to preserve gradient
+        scale: 2, // 2x for high quality
+        useCORS: true,
+        allowTaint: true,
+        logging: true, // Enable logging to debug
+        windowWidth: pollImageRef.current.scrollWidth,
+        windowHeight: pollImageRef.current.scrollHeight,
+        onclone: (clonedDoc, element) => {
+          // Remove ALL stylesheets to prevent oklch color parsing
+          const styleSheets = clonedDoc.querySelectorAll('style, link[rel="stylesheet"]');
+          styleSheets.forEach(sheet => sheet.remove());
+
+          // Ensure the cloned element maintains its dimensions and inline styles
+          element.style.display = 'block';
+          element.style.position = 'relative';
+
+          // Fix text centering in cloned element - apply margin fix only in the clone
+          const allSpans = element.querySelectorAll('span[style*="table-cell"]');
+          allSpans.forEach((span: any) => {
+            // Add the margin fix that works for html2canvas rendering
+            span.style.marginTop = '-8px';
+            span.style.marginBottom = '8px';
+          });
+        }
+      });
+
+      console.log('Canvas created:', {
+        width: canvas.width,
+        height: canvas.height
+      });
+
+      // Convert canvas to blob
+      return new Promise((resolve) => {
+        canvas.toBlob((blob) => {
+          setIsGeneratingImage(false);
+          if (!blob) {
+            console.error('Failed to create blob');
+            toast.error('Failed to create image file');
+            resolve(null);
+            return;
+          }
+          console.log('Image generated successfully');
+          resolve(blob);
+        }, 'image/png', 1.0);
+      });
+    } catch (error) {
+      console.error('Error generating image:', error);
+      setIsGeneratingImage(false);
+      toast.error('Failed to generate image', {
+        description: error instanceof Error ? error.message : 'Unknown error'
+      });
+      return null;
+    }
+  };
+
+  const handleShare = async (poll: Poll, platform: 'twitter' | 'facebook' | 'whatsapp' | 'native' | 'download') => {
+    const url = getShareUrl(poll.id);
+    const text = getShareText(poll);
+    const encodedUrl = encodeURIComponent(url);
+    const encodedText = encodeURIComponent(text);
+
+    // Handle download separately
+    if (platform === 'download') {
+      try {
+        const imageBlob = await generatePollImage(poll);
+        if (!imageBlob) {
+          toast.error('Failed to generate image');
+          return;
+        }
+
+        const downloadUrl = URL.createObjectURL(imageBlob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = `mypeta-poll-${poll.id.substring(0, 8)}.png`;
+        document.body.appendChild(a);
+        a.click();
+
+        // Small delay before cleanup
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(downloadUrl);
+        }, 100);
+
+        toast.success('Image downloaded!', {
+          icon: <Download className="h-4 w-4" />,
+          description: 'Now share it on your favorite platform',
+        });
+      } catch (error) {
+        console.error('Download error:', error);
+        toast.error('Failed to download image');
+      }
+      return;
+    }
+
+    // Handle native share
+    if (platform === 'native') {
+      if (!navigator.share) {
+        toast.error('Share not supported on this browser');
+        return;
+      }
+
+      try {
+        const imageBlob = await generatePollImage(poll);
+        if (imageBlob) {
+          const file = new File([imageBlob], 'poll.png', { type: 'image/png' });
+
+          // Check if the browser supports sharing files
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              title: `Malaysian Poll: ${poll.question}`,
+              text: text,
+              url: url,
+              files: [file],
+            });
+            setShowShareDialog(null);
+            return;
+          } else {
+            // Fallback to share without file
+            await navigator.share({
+              title: `Malaysian Poll: ${poll.question}`,
+              text: text,
+              url: url,
+            });
+            setShowShareDialog(null);
+            return;
+          }
+        }
+      } catch (error: any) {
+        if (error.name === 'AbortError') {
+          console.log('User cancelled share');
+          return;
+        }
+        toast.error('Failed to share');
+      }
+      return;
+    }
+
+    // Platform-specific sharing
+    switch (platform) {
+      case 'twitter':
+        window.open(`https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`, '_blank');
+        break;
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, '_blank');
+        break;
+      case 'whatsapp':
+        window.open(`https://wa.me/?text=${encodedText}%20${encodedUrl}`, '_blank');
+        break;
+    }
+
+    setShowShareDialog(null);
+  };
+
+  const copyLink = (poll: Poll) => {
+    const url = getShareUrl(poll.id);
+    navigator.clipboard.writeText(url).then(() => {
+      toast.success('Link copied to clipboard!', {
+        icon: <CheckCircle className="h-4 w-4" />,
+      });
+    });
+  };
+
 
   return (
     <>
@@ -754,7 +950,7 @@ const PollsPage = () => {
               </h1>
             </div>
             <p className="text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
-              Vote on viral and controversial topics about Malaysia. Your voice matters! 
+              Vote on viral and controversial topics about Malaysia. Your voice matters!
               {!selectedState && isSignedIn && (
                 <span className="block mt-2 text-yellow-600 dark:text-yellow-500 font-medium">
                   ⚠️ Select your state to start voting
@@ -823,11 +1019,10 @@ const PollsPage = () => {
               <button
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
-                className={`cursor-pointer shadow-md px-4 py-2 rounded-lg font-medium transition-all ${
-                  selectedCategory === category.id
+                className={`cursor-pointer shadow-md px-4 py-2 rounded-lg font-medium transition-all ${selectedCategory === category.id
                     ? 'bg-emerald-600 text-white shadow-lg'
                     : 'bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700'
-                }`}
+                  }`}
               >
                 <span className="mr-2">{category.emoji}</span>
                 {category.label}
@@ -852,11 +1047,10 @@ const PollsPage = () => {
                     setShowCreatePoll(true);
                   }}
                   disabled={!stats || stats.points < 200}
-                  className={`cursor-pointer flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
-                    !stats || stats.points < 200
+                  className={`cursor-pointer flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${!stats || stats.points < 200
                       ? 'bg-zinc-300 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 cursor-not-allowed'
                       : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl'
-                  }`}
+                    }`}
                 >
                   <Plus className="h-5 w-5" />
                   Create Poll {stats && stats.points < 200 && `(Need ${200 - stats.points} more points)`}
@@ -877,100 +1071,100 @@ const PollsPage = () => {
                   <div className="space-y-6 py-4">
                     {/* Form Section */}
                     <div className="space-y-2">
-                        <input
-                          type="text"
-                          value={newPoll.question}
-                          onChange={(e) => setNewPoll({ ...newPoll, question: e.target.value })}
-                          placeholder="Enter your poll question"
-                          className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                        />
+                      <input
+                        type="text"
+                        value={newPoll.question}
+                        onChange={(e) => setNewPoll({ ...newPoll, question: e.target.value })}
+                        placeholder="Enter your poll question"
+                        className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
 
-                        <input
-                          type="text"
-                          value={newPoll.description}
-                          onChange={(e) => setNewPoll({ ...newPoll, description: e.target.value })}
-                          placeholder="Optional description"
-                          className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                        />
+                      <input
+                        type="text"
+                        value={newPoll.description}
+                        onChange={(e) => setNewPoll({ ...newPoll, description: e.target.value })}
+                        placeholder="Optional description"
+                        className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
 
 
-                        <select
-                          value={newPoll.category}
-                          onChange={(e) => setNewPoll({ ...newPoll, category: e.target.value as Poll['category'] })}
-                          className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                        >
-                          <option value="food">Food</option>
-                          <option value="politics">Politics</option>
-                          <option value="culture">Culture</option>
-                          <option value="economy">Economy</option>
-                          <option value="social">Social</option>
-                        </select>
+                      <select
+                        value={newPoll.category}
+                        onChange={(e) => setNewPoll({ ...newPoll, category: e.target.value as Poll['category'] })}
+                        className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      >
+                        <option value="food">Food</option>
+                        <option value="politics">Politics</option>
+                        <option value="culture">Culture</option>
+                        <option value="economy">Economy</option>
+                        <option value="social">Social</option>
+                      </select>
 
-                        <div className="space-y-3">
-                          <label className="flex items-start gap-3 cursor-pointer group">
-                            <div className="relative flex items-center justify-center mt-0.5">
+                      <div className="space-y-3">
+                        <label className="flex items-start gap-3 cursor-pointer group">
+                          <div className="relative flex items-center justify-center mt-0.5">
+                            <input
+                              type="checkbox"
+                              checked={hasEndDate}
+                              onChange={(e) => {
+                                setHasEndDate(e.target.checked);
+                                if (!e.target.checked) {
+                                  setNewPoll({ ...newPoll, endDate: '' });
+                                }
+                              }}
+                              className="sr-only peer"
+                            />
+                            <div className="w-5 h-5 border-2 border-zinc-300 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-800 peer-checked:bg-emerald-500 peer-checked:border-emerald-500 peer-focus:ring-2 peer-focus:ring-emerald-500/30 transition-all duration-200 flex items-center justify-center group-hover:border-emerald-400 dark:group-hover:border-emerald-500">
+                              <svg
+                                className={`w-3 h-3 text-white transition-all duration-200 ${hasEndDate ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                strokeWidth="3"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                              </svg>
+                            </div>
+                          </div>
+                          <div className="flex-1 -mt-0.5">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
+                              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                                Set an end date for this poll
+                              </span>
+                            </div>
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                              Schedule when voting should automatically close
+                            </p>
+                          </div>
+                        </label>
+
+                        {hasEndDate && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="pl-8"
+                          >
+                            <div className="space-y-2">
                               <input
-                                type="checkbox"
-                                checked={hasEndDate}
-                                onChange={(e) => {
-                                  setHasEndDate(e.target.checked);
-                                  if (!e.target.checked) {
-                                    setNewPoll({ ...newPoll, endDate: '' });
-                                  }
-                                }}
-                                className="sr-only peer"
+                                type="datetime-local"
+                                value={newPoll.endDate}
+                                onChange={(e) => setNewPoll({ ...newPoll, endDate: e.target.value })}
+                                placeholder="Select end date"
+                                className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
                               />
-                              <div className="w-5 h-5 border-2 border-zinc-300 dark:border-zinc-600 rounded-md bg-white dark:bg-zinc-800 peer-checked:bg-emerald-500 peer-checked:border-emerald-500 peer-focus:ring-2 peer-focus:ring-emerald-500/30 transition-all duration-200 flex items-center justify-center group-hover:border-emerald-400 dark:group-hover:border-emerald-500">
-                                <svg 
-                                  className={`w-3 h-3 text-white transition-all duration-200 ${hasEndDate ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`}
-                                  fill="none" 
-                                  stroke="currentColor" 
-                                  viewBox="0 0 24 24"
-                                  strokeWidth="3"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                >
-                                  <polyline points="20 6 9 17 4 12"></polyline>
-                                </svg>
+                              <div className="flex items-start gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                                <Clock className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                                <span>The poll will automatically close at this date and time.</span>
                               </div>
                             </div>
-                            <div className="flex-1 -mt-0.5">
-                              <div className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
-                                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                                  Set an end date for this poll
-                                </span>
-                              </div>
-                              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                                Schedule when voting should automatically close
-                              </p>
-                            </div>
-                          </label>
-                          
-                          {hasEndDate && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.2 }}
-                              className="pl-8"
-                            >
-                              <div className="space-y-2">
-                                <input
-                                  type="datetime-local"
-                                  value={newPoll.endDate}
-                                  onChange={(e) => setNewPoll({ ...newPoll, endDate: e.target.value })}
-                                  placeholder="Select end date"
-                                  className="w-full px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-zinc-800 text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
-                                />
-                                <div className="flex items-start gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-                                  <Clock className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-                                  <span>The poll will automatically close at this date and time.</span>
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                        </div>
+                          </motion.div>
+                        )}
+                      </div>
 
                       <div className="space-y-4 mt-4">
                         {newPoll.options.map((option, index) => (
@@ -988,7 +1182,7 @@ const PollsPage = () => {
                                 >
                                   {option.emoji || ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'][index] || '❓'}
                                 </button>
-                                
+
                                 {/* Emoji Picker Dropdown */}
                                 {showEmojiPicker === index && (
                                   <motion.div
@@ -1024,7 +1218,7 @@ const PollsPage = () => {
                                   </motion.div>
                                 )}
                               </div>
-                              
+
                               <input
                                 type="text"
                                 value={option.label}
@@ -1088,173 +1282,507 @@ const PollsPage = () => {
               ))
             ) : (
               filteredPolls.map((poll, index) => {
-              const hasVoted = userVotes[poll.id];
-              const results = pollResults[poll.id];
-              const isPollEnded = !isPollLive(poll);
+                const hasVoted = userVotes[poll.id];
+                const results = pollResults[poll.id];
+                const isPollEnded = !isPollLive(poll);
 
-              return (
-                <motion.div
-                  key={poll.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="bg-white dark:bg-zinc-900 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-800 p-6 hover:shadow-xl transition-shadow"
-                >
-                  {/* Poll Header */}
-                  <div className="mb-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-lg font-bold text-zinc-800 dark:text-zinc-100 flex-1">
-                        {poll.question}
-                      </h3>
-                      <div className="flex items-center gap-2">
-                        {poll.endDate ? (
-                          <span className={`px-2 py-1 rounded text-xs font-medium ${
-                            isPollLive(poll)
-                              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                              : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                          }`}>
-                            {isPollLive(poll) ? 'Live' : 'Ended'}
-                          </span>
-                        ) : (
-                          <span className="px-2 py-1 rounded text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
-                            Live
-                          </span>
-                        )}
-                        {hasVoted && (
-                          <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-500 flex-shrink-0" />
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                        {poll.description}
-                      </p>
-                      <div className="flex items-center gap-2 ml-2 flex-shrink-0">
-                        <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
-                          <Clock className="h-3 w-3" />
-                          <span>{formatDate(poll.createdAt)}</span>
-                        </div>
-                        {poll.endDate && (
-                          <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
-                            <Calendar className="h-3 w-3" />
-                            <span className="font-medium">
-                              {isPollLive(poll) ? 'Ends' : 'Ended'}: {formatEndDate(poll.endDate)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Options */}
-                  <div className="space-y-3">
-                    {poll.options.map((option, optionIndex) => {
-                      const percentage = getVotePercentage(poll.id, optionIndex);
-                      const isSelected = hasVoted?.selectedOption === optionIndex;
-                      const isEnded = !isPollLive(poll);
-                      const showResults = hasVoted || isEnded;
-
-                      return (
-                        <button
-                          key={optionIndex}
-                          onClick={() => handleVote(poll.id, optionIndex)}
-                          disabled={!!hasVoted || isEnded}
-                          className={`w-full relative overflow-hidden rounded-lg border-2 transition-all ${
-                            isSelected
-                              ? 'border-emerald-600 dark:border-emerald-500'
-                              : hasVoted || isEnded
-                              ? 'border-zinc-200 dark:border-zinc-700'
-                              : 'border-zinc-300 dark:border-zinc-700 hover:border-emerald-500 dark:hover:border-emerald-600'
-                          } ${hasVoted || isEnded ? 'cursor-default' : 'cursor-pointer hover:shadow-md'} ${
-                            isEnded && !hasVoted ? 'opacity-60' : ''
-                          }`}
-                        >
-                          {/* Progress Bar */}
-                          {showResults && (
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${percentage}%` }}
-                              transition={{ duration: 0.5, ease: 'easeOut' }}
-                              className={`absolute inset-0 ${
-                                isSelected
-                                  ? 'bg-emerald-100 dark:bg-emerald-900/30'
-                                  : 'bg-zinc-100 dark:bg-zinc-800'
-                              }`}
-                            />
-                          )}
-
-                          {/* Option Content */}
-                          <div className="relative px-4 py-3 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <span className={`text-2xl ${isEnded && !hasVoted ? 'grayscale' : ''}`}>
-                                {option.emoji}
-                              </span>
-                              <span className={`font-medium ${
-                                isSelected
-                                  ? 'text-emerald-700 dark:text-emerald-400'
-                                  : isEnded && !hasVoted
-                                  ? 'text-zinc-500 dark:text-zinc-500'
-                                  : 'text-zinc-800 dark:text-zinc-200'
+                return (
+                  <motion.div
+                    key={poll.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="bg-white dark:bg-zinc-900 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-800 p-6 hover:shadow-xl transition-shadow"
+                  >
+                    {/* Poll Header */}
+                    <div className="mb-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="text-lg font-bold text-zinc-800 dark:text-zinc-100 flex-1">
+                          {poll.question}
+                        </h3>
+                        <div className="flex items-center gap-2">
+                          {poll.endDate ? (
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${isPollLive(poll)
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                               }`}>
-                                {option.label}
+                              {isPollLive(poll) ? 'Live' : 'Ended'}
+                            </span>
+                          ) : (
+                            <span className="px-2 py-1 rounded text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                              Live
+                            </span>
+                          )}
+                          {hasVoted && (
+                            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-500 flex-shrink-0" />
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                          {poll.description}
+                        </p>
+                        <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                          <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
+                            <Clock className="h-3 w-3" />
+                            <span>{formatDate(poll.createdAt)}</span>
+                          </div>
+                          {poll.endDate && (
+                            <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
+                              <Calendar className="h-3 w-3" />
+                              <span className="font-medium">
+                                {isPollLive(poll) ? 'Ends' : 'Ended'}: {formatEndDate(poll.endDate)}
                               </span>
                             </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Options */}
+                    <div className="space-y-3">
+                      {poll.options.map((option, optionIndex) => {
+                        const percentage = getVotePercentage(poll.id, optionIndex);
+                        const isSelected = hasVoted?.selectedOption === optionIndex;
+                        const isEnded = !isPollLive(poll);
+                        const showResults = hasVoted || isEnded;
+
+                        return (
+                          <button
+                            key={optionIndex}
+                            onClick={() => handleVote(poll.id, optionIndex)}
+                            disabled={!!hasVoted || isEnded}
+                            className={`w-full relative overflow-hidden rounded-lg border-2 transition-all ${isSelected
+                                ? 'border-emerald-600 dark:border-emerald-500'
+                                : hasVoted || isEnded
+                                  ? 'border-zinc-200 dark:border-zinc-700'
+                                  : 'border-zinc-300 dark:border-zinc-700 hover:border-emerald-500 dark:hover:border-emerald-600'
+                              } ${hasVoted || isEnded ? 'cursor-default' : 'cursor-pointer hover:shadow-md'} ${isEnded && !hasVoted ? 'opacity-60' : ''
+                              }`}
+                          >
+                            {/* Progress Bar */}
                             {showResults && (
-                              <div className="flex items-center gap-2">
-                                <span className={`text-sm font-bold ${
-                                  isEnded && !hasVoted
-                                    ? 'text-zinc-500 dark:text-zinc-400'
-                                    : 'text-zinc-700 dark:text-zinc-300'
-                                }`}>
-                                  {percentage.toFixed(1)}%
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${percentage}%` }}
+                                transition={{ duration: 0.5, ease: 'easeOut' }}
+                                className={`absolute inset-0 ${isSelected
+                                    ? 'bg-emerald-100 dark:bg-emerald-900/30'
+                                    : 'bg-zinc-100 dark:bg-zinc-800'
+                                  }`}
+                              />
+                            )}
+
+                            {/* Option Content */}
+                            <div className="relative px-4 py-3 flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <span className={`text-2xl ${isEnded && !hasVoted ? 'grayscale' : ''}`}>
+                                  {option.emoji}
                                 </span>
-                                <span className={`text-xs ${
-                                  isEnded && !hasVoted
-                                    ? 'text-zinc-400 dark:text-zinc-500'
-                                    : 'text-zinc-500 dark:text-zinc-400'
-                                }`}>
-                                  ({results?.votes[optionIndex] || 0})
+                                <span className={`font-medium ${isSelected
+                                    ? 'text-emerald-700 dark:text-emerald-400'
+                                    : isEnded && !hasVoted
+                                      ? 'text-zinc-500 dark:text-zinc-500'
+                                      : 'text-zinc-800 dark:text-zinc-200'
+                                  }`}>
+                                  {option.label}
                                 </span>
                               </div>
+                              {showResults && (
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-sm font-bold ${isEnded && !hasVoted
+                                      ? 'text-zinc-500 dark:text-zinc-400'
+                                      : 'text-zinc-700 dark:text-zinc-300'
+                                    }`}>
+                                    {percentage.toFixed(1)}%
+                                  </span>
+                                  <span className={`text-xs ${isEnded && !hasVoted
+                                      ? 'text-zinc-400 dark:text-zinc-500'
+                                      : 'text-zinc-500 dark:text-zinc-400'
+                                    }`}>
+                                    ({results?.votes[optionIndex] || 0})
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Bottom Actions - Share, Total Votes, and Details */}
+                    <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                      <div className="flex items-center gap-3">
+                        {/* Share Button - Main CTA */}
+                        <button
+                          onClick={() => setShowShareDialog(poll.id)}
+                          className="cursor-pointer flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors shadow-sm hover:shadow-md"
+                        >
+                          <Share2 className="h-4 w-4" />
+                          Share
+                        </button>
+
+                        {/* Total Votes and Details */}
+                        {(hasVoted || isPollEnded) && results && (
+                          <div className="flex items-center gap-2">
+                            <p className={`text-xs whitespace-nowrap ${isPollEnded && !hasVoted
+                                ? 'text-zinc-500 dark:text-zinc-500'
+                                : 'text-zinc-600 dark:text-zinc-400'
+                              }`}>
+                              <span className="font-bold">{results.totalVotes}</span> votes
+                            </p>
+                            {results.totalVotes > 0 && (
+                              <button
+                                onClick={() => setSelectedPollForDetails(poll)}
+                                className={`cursor-pointer p-2 rounded-lg transition-colors ${isPollEnded && !hasVoted
+                                    ? 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                                    : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
+                                  }`}
+                                title="See Details"
+                              >
+                                <Info className="h-4 w-4" />
+                              </button>
                             )}
                           </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Total Votes and Details Button */}
-                  {(hasVoted || isPollEnded) && results && (
-                    <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                      <div className="flex items-center justify-center gap-3">
-                        <p className={`text-sm text-center ${
-                          isPollEnded && !hasVoted
-                            ? 'text-zinc-500 dark:text-zinc-500'
-                            : 'text-zinc-600 dark:text-zinc-400'
-                        }`}>
-                          Total votes: <span className="font-bold">{results.totalVotes}</span>
-                        </p>
-                        {results.totalVotes > 0 && (
-                          <button
-                            onClick={() => setSelectedPollForDetails(poll)}
-                            className={`cursor-pointer flex items-center gap-1 text-xs font-medium transition-colors ${
-                              isPollEnded && !hasVoted
-                                ? 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'
-                                : 'text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300'
-                            }`}
-                          >
-                            <Info className="h-3 w-3" />
-                            See Details
-                          </button>
                         )}
                       </div>
                     </div>
-                  )}
-                </motion.div>
-              );
-            })
+                  </motion.div>
+                );
+              })
             )}
           </div>
+
+          {/* Share Dialog */}
+          <Dialog open={showShareDialog !== null} onOpenChange={(open) => !open && setShowShareDialog(null)}>
+            <DialogContent className="w-full lg:max-w-md max-h-[90vh] overflow-y-auto mx-4 mx-auto">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-bold text-zinc-800 dark:text-zinc-100">
+                  Share Poll
+                </DialogTitle>
+                <DialogDescription className="text-zinc-600 dark:text-zinc-400">
+                  Download the image, then share it on your favorite platform
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-6 py-4">
+                {showShareDialog && (() => {
+                  const poll = allPolls.find(p => p.id === showShareDialog);
+                  if (!poll) return null;
+                  const results = pollResults[poll.id];
+
+                  return (
+                    <>
+                      {/* Poll Image Preview for Capture */}
+                      <div
+                        ref={pollImageRef}
+                        style={{
+                          position: 'relative',
+                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                          borderRadius: '12px',
+                          padding: '24px',
+                          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                          overflow: 'hidden',
+                          boxSizing: 'border-box',
+                          width: '100%',
+                          minHeight: '300px',
+                          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                        }}
+                      >
+                        {/* Decorative Background Pattern */}
+                        <div style={{
+                          position: 'absolute',
+                          inset: '0',
+                          opacity: 0.1
+                        }}>
+                          <div style={{
+                            position: 'absolute',
+                            top: '0',
+                            right: '0',
+                            width: '128px',
+                            height: '128px',
+                            borderRadius: '50%',
+                            backgroundColor: '#ffffff',
+                            transform: 'translate(64px, -64px)'
+                          }}></div>
+                          <div style={{
+                            position: 'absolute',
+                            bottom: '0',
+                            left: '0',
+                            width: '160px',
+                            height: '160px',
+                            borderRadius: '50%',
+                            backgroundColor: '#ffffff',
+                            transform: 'translate(-80px, 80px)'
+                          }}></div>
+                        </div>
+
+                        {/* Content */}
+                        <div style={{ position: 'relative', zIndex: 10 }}>
+                          {/* Header */}
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            marginBottom: '16px',
+                            justifyContent: 'space-between'
+                          }}>
+                              <span style={{
+                                color: '#ffffff',
+                                fontSize: '20px',
+                                fontWeight: '600',
+                                display: 'table-cell',
+                                verticalAlign: 'middle',
+                                textAlign: 'center'
+                              }}>MYPETA.AI</span>
+                            <span style={{
+                              color: '#ffffff',
+                              fontWeight: '500',
+                              fontSize: '12px'
+                            }}>🇲🇾 Malaysian Poll by the People</span>
+                          </div>
+                          <div style={{ height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.2)', marginBottom: '16px' }} />
+
+                          {/* Question */}
+                          <h3 style={{
+                            color: '#ffffff',
+                            fontSize: '24px',
+                            fontWeight: '700',
+                            marginBottom: '8px',
+                            lineHeight: '1.25',
+                            margin: '0 0 8px 0'
+                          }}>
+                            {poll.question}
+                          </h3>
+
+                          {poll.description && (
+                            <p style={{
+                              fontSize: '14px',
+                              marginBottom: '24px',
+                              paddingBottom: '15px',
+                              color: 'rgba(255, 255, 255, 0.8)',
+                              margin: '0 0 24px 0'
+                            }}>
+                              {poll.description}
+                            </p>
+                          )}
+
+                          {/* Poll Options */}
+                          <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '12px',
+                            marginBottom: '24px'
+                          }}>
+                            {poll.options.map((option, idx) => {
+                              const percentage = results ?
+                                (results.totalVotes > 0 ? (results.votes[idx] / results.totalVotes) * 100 : 0)
+                                : 0;
+
+                              return (
+                                <div key={idx} style={{
+                                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                                  backdropFilter: 'blur(8px)',
+                                  borderRadius: '8px',
+                                  padding: '12px'
+                                }}>
+                                  <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    marginBottom: '8px'
+                                  }}>
+                                    <div style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '8px'
+                                    }}>
+                                      <span style={{
+                                        fontSize: '20px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                      }}>{option.emoji}</span>
+                                      <span style={{
+                                        fontWeight: '500',
+                                        fontSize: '14px',
+                                        color: '#18181b'
+                                      }}>
+                                        {option.label}
+                                      </span>
+                                    </div>
+                                    {results && results.totalVotes > 0 && (
+                                      <span style={{
+                                        fontWeight: '700',
+                                        fontSize: '14px',
+                                        color: '#10b981'
+                                      }}>
+                                        {percentage.toFixed(0)}%
+                                      </span>
+                                    )}
+                                  </div>
+                                  {results && results.totalVotes > 0 && (
+                                    <div style={{
+                                      width: '100%',
+                                      borderRadius: '9999px',
+                                      height: '6px',
+                                      backgroundColor: '#e4e4e7'
+                                    }}>
+                                      <div style={{
+                                        height: '6px',
+                                        borderRadius: '9999px',
+                                        width: `${percentage}%`,
+                                        backgroundColor: '#10b981',
+                                        transition: 'all 0.3s'
+                                      }}></div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          {/* Footer */}
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between'
+                          }}>
+                            {results && (
+                                <span style={{
+                                  color: '#ffffff',
+                                  fontSize: '12px',
+                                  fontWeight: '600',
+                                  display: 'table-cell',
+                                  verticalAlign: 'middle',
+                                  textAlign: 'center',
+                                  whiteSpace: 'nowrap',
+                                }}>
+                                  {results.totalVotes} Total Votes
+                                </span>
+                            )}
+                              <span style={{
+                                color: '#ffffff',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                display: 'table-cell',
+                                verticalAlign: 'middle',
+                                textAlign: 'center',
+                                whiteSpace: 'nowrap',
+                              }}>
+                                Cast Your Vote! 🗳️
+                              </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Step 1: Download */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold">
+                            1
+                          </div>
+                          <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+                            Download the poll image
+                          </h4>
+                        </div>
+                        <button
+                          onClick={() => handleShare(poll, 'download')}
+                          disabled={isGeneratingImage}
+                          className="cursor-pointer w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Download className="h-5 w-5" />
+                          {isGeneratingImage ? 'Generating Image...' : 'Download Image'}
+                        </button>
+                      </div>
+
+                      {/* Step 2: Share */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold">
+                            2
+                          </div>
+                          <h4 className="text-sm font-semibold text-zinc-800 dark:text-zinc-100">
+                            Share on your favorite platform
+                          </h4>
+                        </div>
+
+                        {/* Social Share Buttons - Circular */}
+                        <div className="flex items-center justify-center gap-3 pt-2">
+                          {/* Native Share */}
+                          {typeof navigator !== 'undefined' && 'share' in navigator && (
+                            <button
+                              onClick={() => handleShare(poll, 'native')}
+                              disabled={isGeneratingImage}
+                              className="cursor-pointer group relative"
+                              title="Share (Native)"
+                            >
+                              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 flex items-center justify-center transition-all transform hover:scale-110 shadow-lg">
+                                <Share className="w-6 h-6 text-white" />
+                              </div>
+                            </button>
+                          )}
+
+                          {/* Twitter/X */}
+                          <button
+                            onClick={() => handleShare(poll, 'twitter')}
+                            disabled={isGeneratingImage}
+                            className="cursor-pointer group relative"
+                            title="Share on X (Twitter)"
+                          >
+                            <div className="w-14 h-14 rounded-full bg-[#000000] hover:bg-[#1a1a1a] flex items-center justify-center transition-all transform hover:scale-110 shadow-lg">
+                              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                              </svg>
+                            </div>
+                          </button>
+
+                          {/* Facebook */}
+                          <button
+                            onClick={() => handleShare(poll, 'facebook')}
+                            disabled={isGeneratingImage}
+                            className="cursor-pointer group relative"
+                            title="Share on Facebook"
+                          >
+                            <div className="w-14 h-14 rounded-full bg-[#1877F2] hover:bg-[#1564d6] flex items-center justify-center transition-all transform hover:scale-110 shadow-lg">
+                              <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                              </svg>
+                            </div>
+                          </button>
+
+                          {/* WhatsApp */}
+                          <button
+                            onClick={() => handleShare(poll, 'whatsapp')}
+                            disabled={isGeneratingImage}
+                            className="cursor-pointer group relative"
+                            title="Share on WhatsApp"
+                          >
+                            <div className="w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#20bd5a] flex items-center justify-center transition-all transform hover:scale-110 shadow-lg">
+                              <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" />
+                              </svg>
+                            </div>
+                          </button>
+
+                          {/* Copy Link */}
+                          <button
+                            onClick={() => copyLink(poll)}
+                            className="cursor-pointer group relative"
+                            title="Copy Link"
+                          >
+                            <div className="w-14 h-14 rounded-full bg-zinc-600 hover:bg-zinc-700 dark:bg-zinc-700 dark:hover:bg-zinc-600 flex items-center justify-center transition-all transform hover:scale-110 shadow-lg">
+                              <Copy className="w-6 h-6 text-white" />
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* Poll Details Dialog */}
           {selectedPollForDetails && (
@@ -1310,14 +1838,14 @@ const PollsPage = () => {
                               />
                             </PieChart>
                           </ChartContainer>
-                          
+
                           {/* Legend with Percentage and Amount */}
                           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-2">
                             {chartData.map((item) => {
-                              const percentage = optionVotes > 0 
-                                ? ((item.votes / optionVotes) * 100).toFixed(1) 
+                              const percentage = optionVotes > 0
+                                ? ((item.votes / optionVotes) * 100).toFixed(1)
                                 : '0';
-                              
+
                               return (
                                 <div
                                   key={item.state}
@@ -1345,13 +1873,13 @@ const PollsPage = () => {
                       </div>
                     );
                   })}
-                  {selectedPollForDetails.options.every((_, idx) => 
+                  {selectedPollForDetails.options.every((_, idx) =>
                     getStateChartData(selectedPollForDetails, idx).length === 0
                   ) && (
-                    <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
-                      No state breakdown data available yet
-                    </div>
-                  )}
+                      <div className="text-center py-8 text-zinc-500 dark:text-zinc-400">
+                        No state breakdown data available yet
+                      </div>
+                    )}
                 </div>
               </DialogContent>
             </Dialog>
