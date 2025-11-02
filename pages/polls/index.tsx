@@ -863,7 +863,7 @@ const PollsPage = () => {
       return;
     }
 
-    // Handle native share
+    // Handle native share - just share text and URL (no image)
     if (platform === 'native') {
       if (!navigator.share) {
         toast.error('Share not supported on this browser');
@@ -871,37 +871,21 @@ const PollsPage = () => {
       }
 
       try {
-        const imageBlob = await generatePollImage(poll, 'native');
-        if (imageBlob) {
-          const file = new File([imageBlob], 'poll.png', { type: 'image/png' });
-
-          // Check if the browser supports sharing files
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({
-              title: `Malaysian Poll: ${poll.question}`,
-              text: text,
-              url: url,
-              files: [file],
-            });
-            setShowShareDialog(null);
-            return;
-          } else {
-            // Fallback to share without file
-            await navigator.share({
-              title: `Malaysian Poll: ${poll.question}`,
-              text: text,
-              url: url,
-            });
-            setShowShareDialog(null);
-            return;
-          }
-        }
+        await navigator.share({
+          title: `Malaysian Poll: ${poll.question}`,
+          text: text,
+          url: url,
+        });
+        setShowShareDialog(null);
       } catch (error: any) {
         if (error.name === 'AbortError') {
           console.log('User cancelled share');
           return;
         }
-        toast.error('Failed to share');
+        console.error('Share error:', error);
+        toast.error('Failed to share', {
+          description: 'Try sharing directly from your browser instead'
+        });
       }
       return;
     }
@@ -1750,16 +1734,11 @@ const PollsPage = () => {
                           {typeof navigator !== 'undefined' && 'share' in navigator && (
                             <button
                               onClick={() => handleShare(poll, 'native')}
-                              disabled={generatingImageFor === 'native'}
                               className="cursor-pointer group relative"
                               title="Share (Native)"
                             >
                               <div className="w-14 h-14 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 flex items-center justify-center transition-all transform hover:scale-110 shadow-lg">
-                                {generatingImageFor === 'native' ? (
-                                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                ) : (
-                                  <Share className="w-6 h-6 text-white" />
-                                )}
+                                <Share className="w-6 h-6 text-white" />
                               </div>
                             </button>
                           )}
