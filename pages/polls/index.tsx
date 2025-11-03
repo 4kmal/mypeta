@@ -12,6 +12,8 @@ import { TrendingUp, Lock, CheckCircle, AlertCircle, Plus, Coins, Zap, Star, Clo
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import html2canvas from 'html2canvas';
+import { useTranslation, useTranslations } from '@/hooks/useTranslation';
+import { usePollTranslation } from '@/hooks/usePollTranslation';
 import {
   Dialog,
   DialogContent,
@@ -91,10 +93,36 @@ const PollsPage = () => {
     internalUserId,
     refreshUserData
   } = useUserProfile();
+  
+  // Translations
+  const t = useTranslations({
+    title: { en: 'Malaysian Polls', ms: 'Tinjauan Pendapat Malaysia' },
+    subtitle: { en: 'Vote on viral and controversial topics about Malaysia. Your voice matters!', ms: 'Undi topik viral dan kontroversi tentang Malaysia. Suara anda penting!' },
+    selectState: { en: '⚠️ Select your state to start voting', ms: '⚠️ Pilih negeri anda untuk mula mengundi' },
+    allTopics: { en: 'All Topics', ms: 'Semua Topik' },
+    food: { en: 'Food', ms: 'Makanan' },
+    politics: { en: 'Politics', ms: 'Politik' },
+    culture: { en: 'Culture', ms: 'Budaya' },
+    economy: { en: 'Economy', ms: 'Ekonomi' },
+    social: { en: 'Social', ms: 'Sosial' },
+    createPoll: { en: 'Create Poll', ms: 'Cipta Tinjauan' },
+    needMorePoints: { en: 'Need', ms: 'Perlukan' },
+    morePoints: { en: 'more points', ms: 'mata lagi' },
+    share: { en: 'Share', ms: 'Kongsi' },
+    votes: { en: 'votes', ms: 'undi' },
+    live: { en: 'Live', ms: 'Aktif' },
+    ended: { en: 'Ended', ms: 'Tamat' },
+    ends: { en: 'Ends', ms: 'Tamat' },
+  });
+  
   const [userVotes, setUserVotes] = useState<VoteData>({});
   const [pollResults, setPollResults] = useState<PollResults>({});
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [allPolls, setAllPolls] = useState<Poll[]>([]);
+  
+  // Translate polls based on current language
+  const translatedPolls = usePollTranslation(allPolls);
+  
   const [showCreatePoll, setShowCreatePoll] = useState(false);
   const [newPoll, setNewPoll] = useState({
     question: '',
@@ -460,16 +488,16 @@ const PollsPage = () => {
   };
 
   const filteredPolls = selectedCategory === 'all'
-    ? allPolls
-    : allPolls.filter(poll => poll.category === selectedCategory);
+    ? translatedPolls
+    : translatedPolls.filter(poll => poll.category === selectedCategory);
 
   const categories = [
-    { id: 'all', label: 'All Topics', emoji: '🗳️' },
-    { id: 'food', label: 'Food', emoji: '🍜' },
-    { id: 'politics', label: 'Politics', emoji: '🏛️' },
-    { id: 'culture', label: 'Culture', emoji: '🎭' },
-    { id: 'economy', label: 'Economy', emoji: '💰' },
-    { id: 'social', label: 'Social', emoji: '👥' },
+    { id: 'all', label: t.allTopics, emoji: '🗳️' },
+    { id: 'food', label: t.food, emoji: '🍜' },
+    { id: 'politics', label: t.politics, emoji: '🏛️' },
+    { id: 'culture', label: t.culture, emoji: '🎭' },
+    { id: 'economy', label: t.economy, emoji: '💰' },
+    { id: 'social', label: t.social, emoji: '👥' },
   ];
 
   const getVotePercentage = (pollId: string, optionIndex: number): number => {
@@ -965,14 +993,14 @@ const PollsPage = () => {
             <div className="flex items-center justify-center gap-3 mb-4">
               <TrendingUp className="h-10 w-10 text-emerald-600 dark:text-emerald-500" />
               <h1 className="text-4xl font-bold text-zinc-800 dark:text-zinc-100">
-                Malaysian Polls
+                {t.title}
               </h1>
             </div>
             <p className="text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
-              Vote on viral and controversial topics about Malaysia. Your voice matters!
+              {t.subtitle}
               {!selectedState && isSignedIn && (
                 <span className="block mt-2 text-yellow-600 dark:text-yellow-500 font-medium">
-                  ⚠️ Select your state to start voting
+                  {t.selectState}
                 </span>
               )}
             </p>
@@ -1072,7 +1100,7 @@ const PollsPage = () => {
                     }`}
                 >
                   <Plus className="h-5 w-5" />
-                  Create Poll {stats && stats.points < 200 && `(Need ${200 - stats.points} more points)`}
+                  {t.createPoll} {stats && stats.points < 200 && `(${t.needMorePoints} ${200 - stats.points} ${t.morePoints})`}
                 </button>
               </div>
 
@@ -1325,11 +1353,11 @@ const PollsPage = () => {
                                 ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                                 : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                               }`}>
-                              {isPollLive(poll) ? 'Live' : 'Ended'}
+                              {isPollLive(poll) ? t.live : t.ended}
                             </span>
                           ) : (
                             <span className="px-2 py-1 rounded text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
-                              Live
+                              {t.live}
                             </span>
                           )}
                           {hasVoted && (
@@ -1350,7 +1378,7 @@ const PollsPage = () => {
                             <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
                               <Calendar className="h-3 w-3" />
                               <span className="font-medium">
-                                {isPollLive(poll) ? 'Ends' : 'Ended'}: {formatEndDate(poll.endDate)}
+                                {isPollLive(poll) ? t.ends : t.ended}: {formatEndDate(poll.endDate)}
                               </span>
                             </div>
                           )}
@@ -1438,7 +1466,7 @@ const PollsPage = () => {
                           className="cursor-pointer flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors shadow-sm hover:shadow-md"
                         >
                           <Share2 className="h-4 w-4" />
-                          Share
+                          {t.share}
                         </button>
 
                         {/* Total Votes and Details */}
@@ -1448,7 +1476,7 @@ const PollsPage = () => {
                                 ? 'text-zinc-500 dark:text-zinc-500'
                                 : 'text-zinc-600 dark:text-zinc-400'
                               }`}>
-                              <span className="font-bold">{results.totalVotes}</span> votes
+                              <span className="font-bold">{results.totalVotes}</span> {t.votes}
                             </p>
                             {results.totalVotes > 0 && (
                               <button

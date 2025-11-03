@@ -10,6 +10,7 @@ import PageHeader from '@/components/PageHeader';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { SEO_CONFIG, STRUCTURED_DATA } from '@/lib/seo';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const Home = () => {
   const {
@@ -24,6 +25,18 @@ const Home = () => {
   } = useData();
 
   const [isProMode, setIsProMode] = useState(false);
+
+  // Translations
+  const basicText = useTranslation({ en: 'Basic', ms: 'Asas' });
+  const proText = useTranslation({ en: 'Pro', ms: 'Pro' });
+  const selectCategoryText = useTranslation({ 
+    en: 'Select Category', 
+    ms: 'Pilih Kategori' 
+  });
+  const selectStateText = useTranslation({ 
+    en: 'Select State', 
+    ms: 'Pilih Negeri' 
+  });
 
   // Map category to colors
   const CATEGORY_COLORS: Record<string, string> = {
@@ -91,7 +104,7 @@ const Home = () => {
                     : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
                     }`}
                 >
-                  Basic
+                  {basicText}
                 </button>
                 <button
                   onClick={() => setIsProMode(true)}
@@ -100,7 +113,7 @@ const Home = () => {
                     : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200'
                     }`}
                 >
-                  Pro
+                  {proText}
                 </button>
               </div>
             </div>
@@ -118,14 +131,14 @@ const Home = () => {
 
           <div className="flex justify-center gap-2 mt-2 mb-8">
             <div className="w-full">
-              <p className='text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1'>Select Category</p>
+              <p className='text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1'>{selectCategoryText}</p>
               <CategorySelectorDialog
                 selectedCategory={selectedCategory}
                 onCategoryChange={setSelectedCategory}
               />
             </div>
             <div className="w-full">
-              <p className='text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1'>Select State</p>
+              <p className='text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1'>{selectStateText}</p>
               <StateSelectorDialog
                 selectedState={activeState}
                 onStateChange={setActiveState}

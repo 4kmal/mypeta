@@ -4,6 +4,7 @@ import Lottie from 'lottie-react';
 import MobileNav from '@/components/MobileNav';
 import AuthButton from '@/components/AuthButton';
 import ThemeToggleButton from '@/components/ThemeToggleButton';
+import LanguageToggleButton from '@/components/LanguageToggleButton';
 import { TrendingUp, BarChart3 } from 'lucide-react';
 
 interface PageHeaderProps {
@@ -51,6 +52,7 @@ const PageHeader = ({ showPollsButton = false, showDataButton = false }: PageHea
             </Link>
           )}
           <AuthButton />
+          <LanguageToggleButton />
           <ThemeToggleButton />
         </MobileNav>
       </div>

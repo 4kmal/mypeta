@@ -1,6 +1,8 @@
 import DataChart from './DataChart';
 import { CHART_CONFIGS, type ChartType } from '@/lib/constants';
 import { states } from '@/data/states';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { getCategoryLabel } from '@/lib/helpers';
 
 interface ChartSectionProps {
   selectedState: string;
@@ -25,6 +27,7 @@ const ChartSection = ({
   const selectedStateData = states.find(state => state.id === selectedState);
   const stateName = selectedStateData?.name || selectedState;
   const chartColor = activeColor || config.color;
+  const { language } = useLanguage();
   
   const dataMap = {
     income: chartData.income,
@@ -34,6 +37,19 @@ const ChartSection = ({
     expense: chartData.expense
   };
 
+  // Get translated title from config
+  const translatedTitle = getCategoryLabel(
+    config.dataKey === 'income_median' ? 'income_median' :
+    config.dataKey === 'population' ? 'population' :
+    config.dataKey === 'crime' ? 'crime' :
+    config.dataKey === 'consumption' ? 'water_consumption' :
+    'expenditure',
+    language
+  );
+
+  const trendText = language === 'en' ? 'trend for' : 'trend untuk';
+  const description = `${translatedTitle} ${trendText} ${stateName}`;
+
   return (
     <div className="mt-4 bg-white dark:bg-zinc-900 rounded-3xl shadow-lg p-8">
       {/* Single Chart Display */}
@@ -42,8 +58,8 @@ const ChartSection = ({
           data={dataMap[selectedChartType]}
           dataKey={config.dataKey}
           color={chartColor}
-          title={config.title}
-          description={`${config.title} trend for ${stateName}`}
+          title={translatedTitle}
+          description={description}
         />
       </div>
     </div>

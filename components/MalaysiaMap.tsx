@@ -2,6 +2,8 @@ import { states } from '@/data/states';
 import type { DataCategory } from '@/types';
 import { getCategoryLabel, getDataValue, formatValue } from '@/lib/helpers';
 import MapLegend from './MapLegend';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface MalaysiaMapProps {
   activeState: string | null;
@@ -22,19 +24,29 @@ const CATEGORY_COLORS: Record<DataCategory, string> = {
 
 const MalaysiaMap = ({ activeState, selectedCategory, onStateChange, getStateData, showMapLegend = false }: MalaysiaMapProps) => {
   const activeColor = CATEGORY_COLORS[selectedCategory];
+  const { language } = useLanguage();
+  
+  const populationText = useTranslation({ en: 'Population:', ms: 'Populasi:' });
+  const federalText = useTranslation({ en: '3 Federal', ms: '3 Persekutuan' });
+  const statesText = useTranslation({ en: '13 States', ms: '13 Negeri' });
+  const loadingText = useTranslation({ en: 'Loading data...', ms: 'Memuatkan data...' });
+  const hoverText = useTranslation({ 
+    en: 'Hover over a state or select one...', 
+    ms: 'Tunjuk negeri atau pilih satu...' 
+  });
   
   return (
     <div className="relative bg-white dark:bg-zinc-900 rounded-xl shadow-lg p-8 pt-36 lg:pt-8 flex flex-col justify-center items-center">
       {/* Malaysia Population */}
       <div className='absolute flex flex-col lg:flex-row gap-0 lg:gap-2 top-4 left-4 font-mono text-[10px] lg:text-xs'>
-        <p className='text-zinc-500 dark:text-zinc-400'>🇲🇾 Population:</p>
+        <p className='text-zinc-500 dark:text-zinc-400'>🇲🇾 {populationText}</p>
         <p className='tracking-widest font-bold text-zinc-700 dark:text-zinc-300'>34,231,700</p>
       </div>
       {/* States */}
       <div className='absolute flex flex-col lg:flex-row gap-0 lg:gap-2 top-4 right-4 font-mono text-[10px] lg:text-xs'>
-        <p className='text-end text-zinc-500 dark:text-zinc-400'>3 Federal</p>
+        <p className='text-end text-zinc-500 dark:text-zinc-400'>{federalText}</p>
         <p className='text-end text-zinc-500 dark:text-zinc-400 hidden lg:block'>|</p>
-        <p className='text-end tracking-widest font-bold text-zinc-700 dark:text-zinc-300'>13 States</p>
+        <p className='text-end tracking-widest font-bold text-zinc-700 dark:text-zinc-300'>{statesText}</p>
       </div>
       {/* State name and data display */}
       <div className="absolute top-16 lg:top-20 text-center min-h-[100px] flex flex-col items-center justify-center">
@@ -52,25 +64,25 @@ const MalaysiaMap = ({ activeState, selectedCategory, onStateChange, getStateDat
               return data ? (
                 <div className="text-xs lg:text-2xl text-zinc-700 dark:text-zinc-300">
                   <div className="font-semibold text-zinc-500 dark:text-zinc-400 text-xs lg:text-base mb-1">
-                    {getCategoryLabel(selectedCategory)}
+                    {getCategoryLabel(selectedCategory, language)}
                   </div>
                   <div 
                     className="font-bold" 
                     style={{ color: activeColor }}
                   >
-                    {formatValue(getDataValue(data, selectedCategory), selectedCategory)}
+                    {formatValue(getDataValue(data, selectedCategory), selectedCategory, language)}
                   </div>
                 </div>
               ) : (
                 <div className="text-sm lg:text-base text-zinc-500 dark:text-zinc-400">
-                  Loading data...
+                  {loadingText}
                 </div>
               );
             })()}
           </div>
         ) : (
           <div className="tracking-wide font-bold text-zinc-400 dark:text-zinc-500 mb-2">
-            Hover over a state or select one...
+            {hoverText}
           </div>
         )}
       </div>

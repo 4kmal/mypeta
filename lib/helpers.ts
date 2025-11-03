@@ -5,7 +5,9 @@ export const mapStateName = (stateName: string): string => {
   return STATE_MAPPING[stateName] || stateName;
 };
 
-export const formatValue = (value: number, category: DataCategory): string => {
+export const formatValue = (value: number, category: DataCategory, language: 'en' | 'ms' = 'en'): string => {
+  const casesText = language === 'en' ? 'cases' : 'kes';
+  
   switch (category) {
     case 'income_median':
     case 'expenditure':
@@ -18,7 +20,7 @@ export const formatValue = (value: number, category: DataCategory): string => {
     case 'population':
       return new Intl.NumberFormat('en-MY').format(value);
     case 'crime':
-      return new Intl.NumberFormat('en-MY').format(value) + ' cases';
+      return new Intl.NumberFormat('en-MY').format(value) + ` ${casesText}`;
     case 'water_consumption':
       return new Intl.NumberFormat('en-MY').format(value) + ' L';
     default:
@@ -26,15 +28,15 @@ export const formatValue = (value: number, category: DataCategory): string => {
   }
 };
 
-export const getCategoryLabel = (category: DataCategory): string => {
-  const labels: Record<DataCategory, string> = {
-    income_median: 'Median Household Income',
-    population: 'Population',
-    crime: 'Crime Cases',
-    water_consumption: 'Water Consumption',
-    expenditure: 'Mean Household Expenditure'
+export const getCategoryLabel = (category: DataCategory, language: 'en' | 'ms' = 'en'): string => {
+  const labels: Record<DataCategory, { en: string; ms: string }> = {
+    income_median: { en: 'Median Household Income', ms: 'Pendapatan Isi Rumah Median' },
+    population: { en: 'Population', ms: 'Populasi' },
+    crime: { en: 'Crime Cases', ms: 'Kes Jenayah' },
+    water_consumption: { en: 'Water Consumption', ms: 'Penggunaan Air' },
+    expenditure: { en: 'Mean Household Expenditure', ms: 'Perbelanjaan Isi Rumah Purata' }
   };
-  return labels[category] || '';
+  return labels[category]?.[language] || '';
 };
 
 export const getDataValue = (data: any, category: DataCategory): number => {
