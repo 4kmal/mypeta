@@ -1061,12 +1061,12 @@ const PollsPage = () => {
 
 
           {/* Category Filter */}
-          <div className="flex flex-wrap justify-center gap-3 mb-8">
+          <div className="flex overflow-x-auto gap-3 mb-8 pb-2 scrollbar-hide">
             {categories.map(category => (
               <button
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
-                className={`cursor-pointer shadow-md px-4 py-2 rounded-lg font-medium transition-all ${selectedCategory === category.id
+                className={`cursor-pointer shadow-md px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap flex-shrink-0 ${selectedCategory === category.id
                     ? 'bg-emerald-600 text-white shadow-lg'
                     : 'bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700'
                   }`}
