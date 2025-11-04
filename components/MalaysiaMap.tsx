@@ -36,14 +36,14 @@ const MalaysiaMap = ({ activeState, selectedCategory, onStateChange, getStateDat
   });
   
   return (
-    <div className="relative bg-white dark:bg-zinc-900 rounded-xl shadow-lg p-8 pt-36 lg:pt-8 flex flex-col justify-center items-center">
+    <div className="relative rounded-xl shadow-lg px-0 p-8 pt-36 lg:pt-8 flex flex-col justify-center items-center">
       {/* Malaysia Population */}
-      <div className='absolute flex flex-col lg:flex-row gap-0 lg:gap-2 top-4 left-4 font-mono text-[10px] lg:text-xs'>
+      <div className='absolute flex flex-col lg:flex-row gap-0 lg:gap-2 top-4 left-0 font-mono text-[10px] lg:text-xs'>
         <p className='text-zinc-500 dark:text-zinc-400'>🇲🇾 {populationText}</p>
         <p className='tracking-widest font-bold text-zinc-700 dark:text-zinc-300'>34,231,700</p>
       </div>
       {/* States */}
-      <div className='absolute flex flex-col lg:flex-row gap-0 lg:gap-2 top-4 right-4 font-mono text-[10px] lg:text-xs'>
+      <div className='absolute flex flex-col lg:flex-row gap-0 lg:gap-2 top-4 right-0 font-mono text-[10px] lg:text-xs'>
         <p className='text-end text-zinc-500 dark:text-zinc-400'>{federalText}</p>
         <p className='text-end text-zinc-500 dark:text-zinc-400 hidden lg:block'>|</p>
         <p className='text-end tracking-widest font-bold text-zinc-700 dark:text-zinc-300'>{statesText}</p>
@@ -123,7 +123,7 @@ const MalaysiaMap = ({ activeState, selectedCategory, onStateChange, getStateDat
       </div>
 
       {showMapLegend &&
-        <div className='-mb-4 lg:mb-0 mt-4 lg:mt-4'>
+        <div className='-mb-4 lg:mb-0'>
           <MapLegend activeColor={activeColor} />
         </div>
       }

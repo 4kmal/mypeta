@@ -5,9 +5,9 @@ import StateSelectorDialog from '@/components/StateSelector';
 import MalaysiaMap from '@/components/MalaysiaMap';
 import ChartSection from '@/components/ChartSection';
 import Footer from '@/components/Footer';
-import FooterBranding from '@/components/FooterBranding';
+// import FooterBranding from '@/components/FooterBranding';
 import PageHeader from '@/components/PageHeader';
-import { motion } from 'framer-motion';
+// import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { SEO_CONFIG, STRUCTURED_DATA } from '@/lib/seo';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -24,11 +24,11 @@ const Home = () => {
     chartData
   } = useData();
 
-  const [isProMode, setIsProMode] = useState(false);
+  const [isProMode, setIsProMode] = useState(true);
 
   // Translations
-  const basicText = useTranslation({ en: 'Basic', ms: 'Asas' });
-  const proText = useTranslation({ en: 'Pro', ms: 'Pro' });
+  // const basicText = useTranslation({ en: 'Basic', ms: 'Asas' });
+  // const proText = useTranslation({ en: 'Pro', ms: 'Pro' });
   const selectCategoryText = useTranslation({ 
     en: 'Select Category', 
     ms: 'Pilih Kategori' 
@@ -73,13 +73,12 @@ const Home = () => {
       <div className="min-h-screen bg-zinc-100 dark:bg-[#111114] pb-12">
         <PageHeader showPollsButton={true} />
 
-        <div className="max-w-6xl mx-auto px-4 pt-12">
+        <div className="max-w-6xl mx-auto px-4 pt-0">
 
           {/* Mode Toggle */}
-          <div className="flex justify-center mb-6">
+          {/* <div className="flex justify-center mb-6">
             <div className="bg-white dark:bg-zinc-900 rounded-lg p-1 shadow-md border-0 relative">
               <div className="flex relative">
-                {/* Sliding Background */}
                 <motion.div
                   className="absolute top-0 left-0 bg-gradient-to-b from-zinc-900 to-zinc-600 dark:from-zinc-800 dark:to-zinc-700 rounded-md shadow-sm"
                   initial={false}
@@ -117,9 +116,7 @@ const Home = () => {
                 </button>
               </div>
             </div>
-          </div>
-
-
+          </div> */}
 
           <MalaysiaMap
             activeState={activeState}
