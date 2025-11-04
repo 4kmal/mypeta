@@ -273,3 +273,27 @@
 .animate-pulse-inner {
   animation: pulse-inner 1.5s ease-in-out infinite;
 }
+
+/* Clerk Modal Centering */
+.cl-modalContent {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+}
+
+/* Ensure proper centering on mobile */
+@media (max-width: 768px) {
+  .cl-modalContent {
+    width: calc(100% - 2rem) !important;
+    max-width: 400px !important;
+  }
+}
+
+/* Backdrop styling */
+.cl-modalBackdrop {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}

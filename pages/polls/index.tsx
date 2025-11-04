@@ -6,6 +6,7 @@ import { useUserProfile } from '@/contexts/UserProfileContext';
 import { Poll } from '@/data/polls';
 import { supabase } from '@/lib/supabase';
 import PageHeader from '@/components/PageHeader';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
 import { TrendingUp, Lock, CheckCircle, AlertCircle, Plus, Coins, Zap, Star, Clock, Calendar, Info, HelpCircle, Share2, X, Download, ArrowUpFromLine, Copy, Share } from 'lucide-react';
@@ -984,7 +985,7 @@ const PollsPage = () => {
         })()}
       </Head>
 
-      <div className="min-h-screen bg-zinc-100 dark:bg-[#111114] pb-12">
+      <div className="min-h-screen bg-zinc-100 dark:bg-[#111114] pb-20 md:pb-12">
         <PageHeader showDataButton={true} />
 
         <div className="max-w-6xl mx-auto px-4 pt-8">
@@ -1918,8 +1919,9 @@ const PollsPage = () => {
           )}
 
           <Footer />
-          {/* <FooterBranding /> */}
         </div>
+
+        <MobileBottomNav />
       </div>
     </>
   );

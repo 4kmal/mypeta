@@ -5,9 +5,8 @@ import StateSelectorDialog from '@/components/StateSelector';
 import MalaysiaMap from '@/components/MalaysiaMap';
 import ChartSection from '@/components/ChartSection';
 import Footer from '@/components/Footer';
-// import FooterBranding from '@/components/FooterBranding';
 import PageHeader from '@/components/PageHeader';
-// import { motion } from 'framer-motion';
+import MobileBottomNav from '@/components/MobileBottomNav';
 import { useState } from 'react';
 import { SEO_CONFIG, STRUCTURED_DATA } from '@/lib/seo';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -70,7 +69,7 @@ const Home = () => {
         <meta name="format-detection" content="telephone=no" />
       </Head>
 
-      <div className="min-h-screen bg-zinc-100 dark:bg-[#111114] pb-12">
+      <div className="min-h-screen bg-zinc-100 dark:bg-[#111114] pb-20 md:pb-12">
         <PageHeader showPollsButton={true} />
 
         <div className="max-w-6xl mx-auto px-4 pt-0">
@@ -155,9 +154,9 @@ const Home = () => {
 
           <Footer />
 
-          {/* <FooterBranding /> */}
-
         </div>
+
+        <MobileBottomNav />
       </div>
     </>
   );

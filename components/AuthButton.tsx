@@ -2,6 +2,7 @@ import { useUser, useAuth, useClerk } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, MapPin, Coins, Zap, Star } from "lucide-react";
 import React, { useState } from "react";
+import { useRouter } from "next/router";
 import {
   Dialog,
   DialogContent,
@@ -16,8 +17,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import UserStateSelector from "@/components/UserStateSelector";
+import UserStatsDialog from "@/components/UserStatsDialog";
 import { useUserProfile } from "@/contexts/UserProfileContext";
 import { states } from "@/data/states";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // X (Twitter) Logo Component
 const XLogo = ({ className }: { className?: string }) => (
@@ -48,10 +51,13 @@ const AuthButton = () => {
   const { user, isLoaded } = useUser();
   const { isSignedIn } = useAuth();
   const { signOut, openSignIn } = useClerk();
+  const router = useRouter();
   const [showProfile, setShowProfile] = useState(false);
   const [showStateSelectorDialog, setShowStateSelectorDialog] = useState(false);
+  const [showStatsDialog, setShowStatsDialog] = useState(false);
   const { selectedState, stats, getLevel } = useUserProfile();
   const [imageError, setImageError] = useState(false);
+  const isMobile = useIsMobile();
 
   // Reset image error when state changes
   React.useEffect(() => {
@@ -65,6 +71,16 @@ const AuthButton = () => {
       });
     } catch (error) {
       console.error('Login failed:', error);
+    }
+  };
+
+  const handleProfileClick = () => {
+    // On desktop, navigate to profile page
+    if (window.innerWidth >= 768) {
+      router.push('/profile');
+    } else {
+      // On mobile, keep the dialog behavior
+      setShowProfile(true);
     }
   };
 
@@ -96,7 +112,7 @@ const AuthButton = () => {
       <>
         {/* Profile Button */}
         <button
-          onClick={() => setShowProfile(true)}
+          onClick={handleProfileClick}
           className="cursor-pointer flex items-center gap-2 px-3 py-3 md:p-2 rounded-lg shadow-md bg-zinc-300 dark:bg-zinc-800 hover:bg-zinc-500 dark:hover:bg-zinc-700 transition-colors duration-200"
           aria-label="View profile"
         >
@@ -141,59 +157,89 @@ const AuthButton = () => {
 
               {/* Polls Stats */}
               {stats && (
-                <div className="w-full flex items-center justify-center gap-4 text-sm text-zinc-600 dark:text-zinc-400">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1.5 cursor-help">
-                          <Coins className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
-                          <span>{stats.points} pts</span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p className="font-semibold mb-1">Points</p>
-                        <p className="text-sm">• Earn +10 points per vote</p>
-                        <p className="text-sm">• Creating a poll costs 200 points</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  
-                  <span className="text-zinc-400/30 font-extrabold dark:text-zinc-500/30">|</span>
-                  
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1.5 cursor-help">
-                          <Zap className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
-                          <span>LVL {getLevel()}</span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p className="font-semibold mb-1">Level</p>
-                        <p className="text-sm">Your current level based on total EXP</p>
-                        <p className="text-sm">• Level up every 1,000 EXP</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  
-                  <span className="text-zinc-400/30 font-extrabold dark:text-zinc-500/30">|</span>
-                  
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1.5 cursor-help">
-                          <Star className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
-                          <span>{stats.exp} EXP</span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        <p className="font-semibold mb-1">Experience Points</p>
-                        <p className="text-sm">• Earn +10 EXP per vote</p>
-                        <p className="text-sm">• Earn +200 EXP per poll created</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
+                <>
+                  {isMobile ? (
+                    // On mobile, use clickable stats that open a dialog
+                    <button
+                      onClick={() => setShowStatsDialog(true)}
+                      className="w-full flex items-center justify-center gap-4 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 rounded-lg p-3 transition-colors"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Coins className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+                        <span>{stats.points} pts</span>
+                      </div>
+                      
+                      <span className="text-zinc-400/30 font-extrabold dark:text-zinc-500/30">|</span>
+                      
+                      <div className="flex items-center gap-1.5">
+                        <Zap className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+                        <span>LVL {getLevel()}</span>
+                      </div>
+                      
+                      <span className="text-zinc-400/30 font-extrabold dark:text-zinc-500/30">|</span>
+                      
+                      <div className="flex items-center gap-1.5">
+                        <Star className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+                        <span>{stats.exp} EXP</span>
+                      </div>
+                    </button>
+                  ) : (
+                    // On desktop, use tooltips
+                    <div className="w-full flex items-center justify-center gap-4 text-sm text-zinc-600 dark:text-zinc-400">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-1.5 cursor-help">
+                              <Coins className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+                              <span>{stats.points} pts</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="font-semibold mb-1">Points</p>
+                            <p className="text-sm">• Earn +10 points per vote</p>
+                            <p className="text-sm">• Creating a poll costs 200 points</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      
+                      <span className="text-zinc-400/30 font-extrabold dark:text-zinc-500/30">|</span>
+                      
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-1.5 cursor-help">
+                              <Zap className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+                              <span>LVL {getLevel()}</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="font-semibold mb-1">Level</p>
+                            <p className="text-sm">Your current level based on total EXP</p>
+                            <p className="text-sm">• Level up every 1,000 EXP</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      
+                      <span className="text-zinc-400/30 font-extrabold dark:text-zinc-500/30">|</span>
+                      
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-1.5 cursor-help">
+                              <Star className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+                              <span>{stats.exp} EXP</span>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p className="font-semibold mb-1">Experience Points</p>
+                            <p className="text-sm">• Earn +10 EXP per vote</p>
+                            <p className="text-sm">• Earn +200 EXP per poll created</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Selected State Display */}
@@ -245,6 +291,17 @@ const AuthButton = () => {
           externalOpen={showStateSelectorDialog || undefined}
           onExternalOpenChange={setShowStateSelectorDialog}
         />
+
+        {/* Stats Info Dialog for Mobile */}
+        {stats && (
+          <UserStatsDialog
+            open={showStatsDialog}
+            onOpenChange={setShowStatsDialog}
+            points={stats.points}
+            level={getLevel()}
+            exp={stats.exp}
+          />
+        )}
       </>
     );
   }
