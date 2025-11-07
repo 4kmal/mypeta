@@ -36,7 +36,7 @@ const MalaysiaMap = ({ activeState, selectedCategory, onStateChange, getStateDat
   });
   
   return (
-    <div className="relative rounded-xl shadow-lg px-0 p-8 pt-36 lg:pt-8 flex flex-col justify-center items-center">
+    <div className="relative rounded-xl px-0 p-8 pt-36 lg:pt-8 flex flex-col justify-center items-center">
       {/* Malaysia Population */}
       <div className='absolute flex flex-col lg:flex-row gap-0 lg:gap-2 top-4 left-0 font-mono text-[10px] lg:text-xs'>
         <p className='text-zinc-500 dark:text-zinc-400'>🇲🇾 {populationText}</p>
