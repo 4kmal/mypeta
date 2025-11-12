@@ -9,7 +9,7 @@ import PageHeader from '@/components/PageHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
-import { TrendingUp, Lock, CheckCircle, AlertCircle, Plus, Coins, Zap, Star, Clock, Calendar, Info, HelpCircle, Share2, X, Download, ArrowUpFromLine, Copy, Share } from 'lucide-react';
+import { TrendingUp, Lock, CheckCircle, AlertCircle, Plus, Coins, Zap, Star, Clock, Calendar, Info, HelpCircle, Share2, X, Download, ArrowUpFromLine, Copy, Share, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import html2canvas from 'html2canvas';
@@ -94,7 +94,7 @@ const PollsPage = () => {
     internalUserId,
     refreshUserData
   } = useUserProfile();
-  
+
   // Translations
   const t = useTranslations({
     title: { en: 'Malaysian Polls', ms: 'Tinjauan Pendapat Malaysia' },
@@ -115,15 +115,15 @@ const PollsPage = () => {
     ended: { en: 'Ended', ms: 'Tamat' },
     ends: { en: 'Ends', ms: 'Tamat' },
   });
-  
+
   const [userVotes, setUserVotes] = useState<VoteData>({});
   const [pollResults, setPollResults] = useState<PollResults>({});
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [allPolls, setAllPolls] = useState<Poll[]>([]);
-  
+
   // Translate polls based on current language
   const translatedPolls = usePollTranslation(allPolls);
-  
+
   const [showCreatePoll, setShowCreatePoll] = useState(false);
   const [newPoll, setNewPoll] = useState({
     question: '',
@@ -947,18 +947,18 @@ const PollsPage = () => {
       <Head>
         <title>Malaysian Polls - My Peta</title>
         <meta name="description" content="Vote on viral and controversial topics about Malaysia" />
-        
+
         {/* Dynamic OG tags based on poll parameter */}
         {(() => {
           const pollId = router.query.poll as string;
           const currentPoll = allPolls.find(p => p.id === pollId);
-          
+
           if (currentPoll) {
             const pollUrl = typeof window !== 'undefined' ? window.location.href : `https://www.mypeta.ai/polls?poll=${pollId}`;
-            const ogImage = typeof window !== 'undefined' 
-              ? `${window.location.origin}/images/og-image.png` 
+            const ogImage = typeof window !== 'undefined'
+              ? `${window.location.origin}/images/og-image.png`
               : 'https://www.mypeta.ai/images/og-image.png';
-            
+
             return (
               <>
                 {/* Open Graph / Facebook */}
@@ -970,7 +970,7 @@ const PollsPage = () => {
                 <meta property="og:image:width" content="1200" />
                 <meta property="og:image:height" content="630" />
                 <meta property="og:site_name" content="My Peta" />
-                
+
                 {/* Twitter */}
                 <meta name="twitter:card" content="summary_large_image" />
                 <meta name="twitter:url" content={pollUrl} />
@@ -980,7 +980,7 @@ const PollsPage = () => {
               </>
             );
           }
-          
+
           return null;
         })()}
       </Head>
@@ -1062,14 +1062,14 @@ const PollsPage = () => {
 
 
           {/* Category Filter */}
-          <div className="flex overflow-x-auto gap-3 mb-8 pb-2 scrollbar-hide">
+          <div className="flex md:justify-center overflow-x-auto gap-3 mb-8 pb-2 scrollbar-hide">
             {categories.map(category => (
               <button
                 key={category.id}
                 onClick={() => setSelectedCategory(category.id)}
                 className={`cursor-pointer shadow-md px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap flex-shrink-0 ${selectedCategory === category.id
-                    ? 'bg-emerald-600 text-white shadow-lg'
-                    : 'bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700'
+                  ? 'bg-emerald-600 text-white shadow-lg'
+                  : 'bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700'
                   }`}
               >
                 <span className="mr-2">{category.emoji}</span>
@@ -1096,8 +1096,8 @@ const PollsPage = () => {
                   }}
                   disabled={!stats || stats.points < 200}
                   className={`cursor-pointer flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${!stats || stats.points < 200
-                      ? 'bg-zinc-300 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 cursor-not-allowed'
-                      : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl'
+                    ? 'bg-zinc-300 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 cursor-not-allowed'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl'
                     }`}
                 >
                   <Plus className="h-5 w-5" />
@@ -1340,19 +1340,194 @@ const PollsPage = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    className="bg-white dark:bg-zinc-900 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-800 p-6 hover:shadow-xl transition-shadow"
+                    className="flex flex-col justify-between gap-6 bg-white dark:bg-zinc-900 rounded-xl shadow-lg border border-zinc-200 dark:border-zinc-800 p-6 hover:shadow-xl transition-shadow"
                   >
                     {/* Poll Header */}
-                    <div className="mb-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="text-lg font-bold text-zinc-800 dark:text-zinc-100 flex-1">
+                    <div className="">
+                      <div className="flex items-start justify-between mb-1">
+                        <h3 className="text-base font-bold tracking-tight leading-[1.2] text-zinc-800 dark:text-zinc-100 flex-1">
                           {poll.question}
                         </h3>
-                        <div className="flex items-center gap-2">
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-zinc-600 dark:text-zinc-400 tracking-tight">
+                          {poll.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Options - Single Bar UI */}
+                    <div className="space-y-3">
+                      {poll.options.length === 2 ? (
+                        <div className="space-y-3">
+                          {/* Option Labels with Divider - Grid Layout */}
+                          <div className="relative grid grid-cols-2 gap-5 items-end">
+                            {poll.options.map((option, optionIndex) => {
+                              const isSelected = hasVoted?.selectedOption === optionIndex;
+                              const isEnded = !isPollLive(poll);
+
+                              return (
+                                <div
+                                  key={optionIndex}
+                                  className={`flex flex-col justify-center ${optionIndex === 0 ? 'items-start' : 'items-end'
+                                    }`}
+                                >
+                                  <div
+                                    className={`flex items-center gap-1.5 ${isSelected
+                                        ? 'text-emerald-700 dark:text-emerald-400 font-semibold'
+                                        : isEnded && !hasVoted
+                                          ? 'text-zinc-500 dark:text-zinc-500'
+                                          : 'text-zinc-800 dark:text-zinc-200'
+                                      }`}
+                                  >
+                                    <span className="text-xs font-medium tracking-tight">
+                                    {option.emoji} {option.label}
+                                    </span>
+                                    {isSelected && (
+                                      <CheckCircle className="h-3 w-3 text-emerald-600 dark:text-emerald-500" />
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            {/* Separator between the two options */}
+                            <div className="absolute left-1/2 -translate-x-1/2 h-6 w-px bg-zinc-300 dark:bg-zinc-700"></div>
+                          </div>
+
+                          {/* Percentage Bar with Vote Buttons Overlaid */}
+                          <div className="relative flex h-7 rounded-full overflow-hidden border border-zinc-200 dark:border-zinc-700">
+                            {poll.options.map((option, optionIndex) => {
+                              const percentage = getVotePercentage(poll.id, optionIndex);
+                              const isSelected = hasVoted?.selectedOption === optionIndex;
+                              const isEnded = !isPollLive(poll);
+                              const showResults = hasVoted || isEnded;
+                              const flexBasis = showResults ? `${percentage}%` : '50%';
+
+                              return (
+                                <motion.div
+                                  key={optionIndex}
+                                  initial={{ flexBasis: '50%' }}
+                                  animate={{ flexBasis: flexBasis }}
+                                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                                  className={`relative flex items-center justify-center ${showResults
+                                      ? isSelected
+                                        ? 'bg-emerald-500 dark:bg-emerald-600'
+                                        : 'bg-zinc-300 dark:bg-zinc-700'
+                                      : 'bg-zinc-200 dark:bg-zinc-800'
+                                    }`}
+                                >
+                                  <span className={`text-xs font-bold ${showResults
+                                      ? isSelected
+                                        ? 'text-white'
+                                        : 'text-zinc-700 dark:text-zinc-300'
+                                      : 'text-zinc-400 dark:text-zinc-500'
+                                    }`}>
+                                    {showResults ? `${percentage.toFixed(1)}%` : '?%'}
+                                  </span>
+                                </motion.div>
+                              );
+                            })}
+                            
+                            {/* Vote Buttons Overlaid on Top of Bar */}
+                            {!hasVoted && !isPollEnded && (
+                              <div className="absolute inset-0 flex items-center justify-between px-0 z-10 pointer-events-none">
+                                <button
+                                  onClick={() => handleVote(poll.id, 0)}
+                                  className="h-full pl-4 pr-3 rounded-l-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-md hover:shadow-lg whitespace-nowrap flex items-center justify-center pointer-events-auto"
+                                >
+                                  Vote
+                                </button>
+                                <button
+                                  onClick={() => handleVote(poll.id, 1)}
+                                  className="h-full pr-4 pl-3 rounded-r-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-md hover:shadow-lg whitespace-nowrap flex items-center justify-center pointer-events-auto"
+                                >
+                                  Vote
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        // Fallback for more than 2 options - keep original card style
+                        poll.options.map((option, optionIndex) => {
+                          const percentage = getVotePercentage(poll.id, optionIndex);
+                          const isSelected = hasVoted?.selectedOption === optionIndex;
+                          const isEnded = !isPollLive(poll);
+                          const showResults = hasVoted || isEnded;
+
+                          return (
+                            <button
+                              key={optionIndex}
+                              onClick={() => handleVote(poll.id, optionIndex)}
+                              disabled={!!hasVoted || isEnded}
+                              className={`w-full relative overflow-hidden rounded-lg border-2 transition-all ${isSelected
+                                ? 'border-emerald-600 dark:border-emerald-500'
+                                : hasVoted || isEnded
+                                  ? 'border-zinc-200 dark:border-zinc-700'
+                                  : 'border-zinc-300 dark:border-zinc-700 hover:border-emerald-500 dark:hover:border-emerald-600'
+                                } ${hasVoted || isEnded ? 'cursor-default' : 'cursor-pointer hover:shadow-md'} ${isEnded && !hasVoted ? 'opacity-60' : ''
+                                }`}
+                            >
+                              {/* Progress Bar */}
+                              {showResults && (
+                                <motion.div
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${percentage}%` }}
+                                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                                  className={`absolute inset-0 ${isSelected
+                                    ? 'bg-emerald-100 dark:bg-emerald-900/30'
+                                    : 'bg-zinc-100 dark:bg-zinc-800'
+                                    }`}
+                                />
+                              )}
+
+                              {/* Option Content */}
+                              <div className="relative px-4 py-3 flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <span className={`text-2xl ${isEnded && !hasVoted ? 'grayscale' : ''}`}>
+                                    {option.emoji}
+                                  </span>
+                                  <span className={`font-medium ${isSelected
+                                    ? 'text-emerald-700 dark:text-emerald-400'
+                                    : isEnded && !hasVoted
+                                      ? 'text-zinc-500 dark:text-zinc-500'
+                                      : 'text-zinc-800 dark:text-zinc-200'
+                                    }`}>
+                                    {option.label}
+                                  </span>
+                                </div>
+                                {showResults && (
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-sm font-bold ${isEnded && !hasVoted
+                                      ? 'text-zinc-500 dark:text-zinc-400'
+                                      : 'text-zinc-700 dark:text-zinc-300'
+                                      }`}>
+                                      {percentage.toFixed(1)}%
+                                    </span>
+                                    <span className={`text-xs ${isEnded && !hasVoted
+                                      ? 'text-zinc-400 dark:text-zinc-500'
+                                      : 'text-zinc-500 dark:text-zinc-400'
+                                      }`}>
+                                      ({results?.votes[optionIndex] || 0})
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })
+                      )}
+
+                      {/* Bottom Actions - Minimalistic Design */}
+                      <div className="mt-4">
+                        <div className="flex items-center justify-between">
+                        {/* Total Votes and Time - Bottom Left */}
+                        <div className="flex items-center gap-3">
+                          {/* Live/Ended Badge */}
                           {poll.endDate ? (
                             <span className={`px-2 py-1 rounded text-xs font-medium ${isPollLive(poll)
-                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                              : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                               }`}>
                               {isPollLive(poll) ? t.live : t.ended}
                             </span>
@@ -1361,130 +1536,47 @@ const PollsPage = () => {
                               {t.live}
                             </span>
                           )}
-                          {hasVoted && (
-                            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-500 flex-shrink-0" />
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                          {poll.description}
-                        </p>
-                        <div className="flex items-center gap-2 ml-2 flex-shrink-0">
-                          <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
-                            <Clock className="h-3 w-3" />
-                            <span>{formatDate(poll.createdAt)}</span>
-                          </div>
-                          {poll.endDate && (
-                            <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
-                              <Calendar className="h-3 w-3" />
-                              <span className="font-medium">
-                                {isPollLive(poll) ? t.ends : t.ended}: {formatEndDate(poll.endDate)}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Options */}
-                    <div className="space-y-3">
-                      {poll.options.map((option, optionIndex) => {
-                        const percentage = getVotePercentage(poll.id, optionIndex);
-                        const isSelected = hasVoted?.selectedOption === optionIndex;
-                        const isEnded = !isPollLive(poll);
-                        const showResults = hasVoted || isEnded;
-
-                        return (
-                          <button
-                            key={optionIndex}
-                            onClick={() => handleVote(poll.id, optionIndex)}
-                            disabled={!!hasVoted || isEnded}
-                            className={`w-full relative overflow-hidden rounded-lg border-2 transition-all ${isSelected
-                                ? 'border-emerald-600 dark:border-emerald-500'
-                                : hasVoted || isEnded
-                                  ? 'border-zinc-200 dark:border-zinc-700'
-                                  : 'border-zinc-300 dark:border-zinc-700 hover:border-emerald-500 dark:hover:border-emerald-600'
-                              } ${hasVoted || isEnded ? 'cursor-default' : 'cursor-pointer hover:shadow-md'} ${isEnded && !hasVoted ? 'opacity-60' : ''
-                              }`}
-                          >
-                            {/* Progress Bar */}
-                            {showResults && (
-                              <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${percentage}%` }}
-                                transition={{ duration: 0.5, ease: 'easeOut' }}
-                                className={`absolute inset-0 ${isSelected
-                                    ? 'bg-emerald-100 dark:bg-emerald-900/30'
-                                    : 'bg-zinc-100 dark:bg-zinc-800'
-                                  }`}
-                              />
-                            )}
-
-                            {/* Option Content */}
-                            <div className="relative px-4 py-3 flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <span className={`text-2xl ${isEnded && !hasVoted ? 'grayscale' : ''}`}>
-                                  {option.emoji}
-                                </span>
-                                <span className={`font-medium ${isSelected
-                                    ? 'text-emerald-700 dark:text-emerald-400'
-                                    : isEnded && !hasVoted
-                                      ? 'text-zinc-500 dark:text-zinc-500'
-                                      : 'text-zinc-800 dark:text-zinc-200'
-                                  }`}>
-                                  {option.label}
-                                </span>
-                              </div>
-                              {showResults && (
-                                <div className="flex items-center gap-2">
-                                  <span className={`text-sm font-bold ${isEnded && !hasVoted
-                                      ? 'text-zinc-500 dark:text-zinc-400'
-                                      : 'text-zinc-700 dark:text-zinc-300'
-                                    }`}>
-                                    {percentage.toFixed(1)}%
-                                  </span>
-                                  <span className={`text-xs ${isEnded && !hasVoted
-                                      ? 'text-zinc-400 dark:text-zinc-500'
-                                      : 'text-zinc-500 dark:text-zinc-400'
-                                    }`}>
-                                    ({results?.votes[optionIndex] || 0})
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Bottom Actions - Share, Total Votes, and Details */}
-                    <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-                      <div className="flex items-center gap-3">
-                        {/* Share Button - Main CTA */}
-                        <button
-                          onClick={() => setShowShareDialog(poll.id)}
-                          className="cursor-pointer flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-colors shadow-sm hover:shadow-md"
-                        >
-                          <Share2 className="h-4 w-4" />
-                          {t.share}
-                        </button>
-
-                        {/* Total Votes and Details */}
-                        {(hasVoted || isPollEnded) && results && (
-                          <div className="flex items-center gap-2">
-                            <p className={`text-xs whitespace-nowrap ${isPollEnded && !hasVoted
+                          {/* Total Votes - Always show */}
+                          {results && (
+                            <p className={`text-xs ${isPollEnded && !hasVoted
                                 ? 'text-zinc-500 dark:text-zinc-500'
                                 : 'text-zinc-600 dark:text-zinc-400'
                               }`}>
                               <span className="font-bold">{results.totalVotes}</span> {t.votes}
                             </p>
-                            {results.totalVotes > 0 && (
+                          )}
+                          {/* Time ago */}
+                          <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
+                            <Clock className="h-3 w-3" />
+                            <span>{formatDate(poll.createdAt)}</span>
+                          </div>
+                          {/* Ended date - show if poll has ended */}
+                          {isPollEnded && poll.endDate && (
+                            <div className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+                              <Calendar className="h-3 w-3" />
+                              <span className="font-medium">{t.ended}: {formatEndDate(poll.endDate)}</span>
+                            </div>
+                          )}
+                        </div>
+
+                          {/* Action Buttons - Bottom Right (Icons Only) */}
+                          <div className="flex items-center gap-2">
+                            {/* Share Button */}
+                            <button
+                              onClick={() => setShowShareDialog(poll.id)}
+                              className="cursor-pointer p-2 rounded-lg transition-all bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 hover:text-emerald-600 dark:hover:text-emerald-400 border border-zinc-200 dark:border-zinc-700 hover:border-emerald-300 dark:hover:border-emerald-700 hover:scale-105 active:scale-95"
+                              title={t.share}
+                            >
+                              <Send className="h-4 w-4" />
+                            </button>
+
+                            {/* Details Button */}
+                            {(hasVoted || isPollEnded) && results && results.totalVotes > 0 && (
                               <button
                                 onClick={() => setSelectedPollForDetails(poll)}
-                                className={`cursor-pointer p-2 rounded-lg transition-colors ${isPollEnded && !hasVoted
-                                    ? 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                                    : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20'
+                                className={`cursor-pointer p-2 rounded-lg transition-all border hover:scale-105 active:scale-95 ${isPollEnded && !hasVoted
+                                  ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 border-zinc-200 dark:border-zinc-700'
+                                  : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 hover:text-emerald-600 dark:hover:text-emerald-400 border-zinc-200 dark:border-zinc-700 hover:border-emerald-300 dark:hover:border-emerald-700'
                                   }`}
                                 title="See Details"
                               >
@@ -1492,9 +1584,11 @@ const PollsPage = () => {
                               </button>
                             )}
                           </div>
-                        )}
+                        </div>
                       </div>
                     </div>
+
+
                   </motion.div>
                 );
               })
@@ -1576,14 +1670,14 @@ const PollsPage = () => {
                             marginBottom: '16px',
                             justifyContent: 'space-between'
                           }}>
-                              <span style={{
-                                color: '#ffffff',
-                                fontSize: '20px',
-                                fontWeight: '600',
-                                display: 'table-cell',
-                                verticalAlign: 'middle',
-                                textAlign: 'center'
-                              }}>MYPETA.AI</span>
+                            <span style={{
+                              color: '#ffffff',
+                              fontSize: '20px',
+                              fontWeight: '600',
+                              display: 'table-cell',
+                              verticalAlign: 'middle',
+                              textAlign: 'center'
+                            }}>MYPETA.AI</span>
                             <span style={{
                               color: '#ffffff',
                               fontWeight: '500',
@@ -1699,18 +1793,6 @@ const PollsPage = () => {
                             justifyContent: 'space-between'
                           }}>
                             {results && (
-                                <span style={{
-                                  color: '#ffffff',
-                                  fontSize: '12px',
-                                  fontWeight: '600',
-                                  display: 'table-cell',
-                                  verticalAlign: 'middle',
-                                  textAlign: 'center',
-                                  whiteSpace: 'nowrap',
-                                }}>
-                                  {results.totalVotes} Total Votes
-                                </span>
-                            )}
                               <span style={{
                                 color: '#ffffff',
                                 fontSize: '12px',
@@ -1720,8 +1802,20 @@ const PollsPage = () => {
                                 textAlign: 'center',
                                 whiteSpace: 'nowrap',
                               }}>
-                                Cast Your Vote! 🗳️
+                                {results.totalVotes} Total Votes
                               </span>
+                            )}
+                            <span style={{
+                              color: '#ffffff',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              display: 'table-cell',
+                              verticalAlign: 'middle',
+                              textAlign: 'center',
+                              whiteSpace: 'nowrap',
+                            }}>
+                              Cast Your Vote! 🗳️
+                            </span>
                           </div>
                         </div>
                       </div>
