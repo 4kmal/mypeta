@@ -986,7 +986,7 @@ const PollsPage = () => {
       </Head>
 
       <div className="min-h-screen bg-zinc-100 dark:bg-[#111114] pb-20 md:pb-12">
-        <PageHeader showDataButton={true} />
+        <PageHeader showDataButton={true} showNewsButton={true} />
 
         <div className="max-w-6xl mx-auto px-4 pt-8">
           {/* Hero Section */}

@@ -146,6 +146,7 @@ export const commonTranslations: Record<string, { en: string; ms: string }> = {
   // Navigation
   home: { en: 'Home', ms: 'Laman Utama' },
   polls: { en: 'Polls', ms: 'Tinjauan Pendapat' },
+  news: { en: 'News', ms: 'Berita' },
   data: { en: 'Data', ms: 'Data' },
   about: { en: 'About', ms: 'Tentang' },
   contact: { en: 'Contact', ms: 'Hubungi' },

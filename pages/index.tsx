@@ -70,7 +70,7 @@ const Home = () => {
       </Head>
 
       <div className="min-h-screen bg-zinc-100 dark:bg-[#111114] pb-20 md:pb-12">
-        <PageHeader showPollsButton={true} />
+        <PageHeader showPollsButton={true} showNewsButton={true} />
 
         <div className="max-w-6xl mx-auto px-4 pt-0">
 

@@ -1,5 +1,5 @@
 import { useRouter } from 'next/router';
-import { BarChart3, TrendingUp, User } from 'lucide-react';
+import { BarChart3, TrendingUp, User, Newspaper } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 
 const MobileBottomNav = () => {
@@ -8,6 +8,7 @@ const MobileBottomNav = () => {
 
   const chartsText = useTranslation({ en: 'Charts', ms: 'Carta' });
   const pollsText = useTranslation({ en: 'Polls', ms: 'Undian' });
+  const newsText = useTranslation({ en: 'News', ms: 'Berita' });
   const profileText = useTranslation({ en: 'Profile', ms: 'Profil' });
 
   const navItems = [
@@ -22,6 +23,12 @@ const MobileBottomNav = () => {
       icon: TrendingUp,
       path: '/polls',
       active: currentPath === '/polls'
+    },
+    {
+      name: newsText,
+      icon: Newspaper,
+      path: '/news',
+      active: currentPath === '/news'
     },
     {
       name: profileText,
