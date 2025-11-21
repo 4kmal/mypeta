@@ -1,6 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { parseStringPromise } from 'xml2js';
 
+export const runtime = 'edge';
+
 export interface NewsItem {
   title: string;
   description: string;
