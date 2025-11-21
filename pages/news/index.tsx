@@ -69,13 +69,29 @@ const NewsPage = () => {
     try {
       const sourcesParam = selectedSources.join(',');
       const response = await fetch(`/api/news/fetch?sources=${sourcesParam}`);
+      
+      // Check if response is ok
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Check content type
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Expected JSON response but received: ' + contentType);
+      }
+      
       const data = await response.json();
 
       if (data.success) {
         setNews(data.news);
+      } else {
+        console.error('API returned error:', data.error);
       }
     } catch (error) {
       console.error('Error fetching news:', error);
+      // Show empty state instead of crashing
+      setNews([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
