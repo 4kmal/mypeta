@@ -153,7 +153,7 @@ const NewsPage = () => {
                   repeat: Infinity,
                   repeatType: 'reverse',
                 }}
-                className="bg-gradient-to-br from-blue-500 to-purple-600 dark:from-blue-600 dark:to-purple-700 p-6 rounded-3xl shadow-2xl"
+                className="bg-purple-600 p-6 rounded-3xl shadow-2xl"
               >
                 <Newspaper className="w-16 h-16 text-white" />
               </motion.div>

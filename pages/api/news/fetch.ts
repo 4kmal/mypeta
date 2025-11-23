@@ -1,5 +1,5 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { parseStringPromise } from 'xml2js';
+
+import { XMLParser } from 'fast-xml-parser';
 
 export const runtime = 'edge';
 
@@ -26,7 +26,7 @@ const RSS_FEEDS = {
   bernama: 'https://www.bernama.com/en/rss/news_malaysia.php',
   nst: 'https://www.nst.com.my/rss',
   malay_mail: 'https://www.malaymail.com/feed/malaysia',
-  
+
   // International
   bbc: 'https://feeds.bbci.co.uk/news/world/rss.xml',
   reuters: 'https://www.reutersagency.com/feed/',
@@ -38,23 +38,31 @@ const RSS_FEEDS = {
  */
 function extractImageUrl(item: any): string | undefined {
   // Try different possible image locations
-  if (item['media:content']?.[0]?.$?.url) {
-    return item['media:content'][0].$.url;
+  // fast-xml-parser handles attributes differently (often prefixed or in a separate property depending on config)
+  // With ignoreAttributes: false, attributes are usually available directly or via a prefix
+
+  if (item['media:content'] && item['media:content']['@_url']) {
+    return item['media:content']['@_url'];
   }
-  if (item['media:thumbnail']?.[0]?.$?.url) {
-    return item['media:thumbnail'][0].$.url;
+  if (Array.isArray(item['media:content']) && item['media:content'][0] && item['media:content'][0]['@_url']) {
+    return item['media:content'][0]['@_url'];
   }
-  if (item.enclosure?.[0]?.$?.url) {
-    return item.enclosure[0].$.url;
+
+  if (item['media:thumbnail'] && item['media:thumbnail']['@_url']) {
+    return item['media:thumbnail']['@_url'];
   }
-  
+
+  if (item.enclosure && item.enclosure['@_url']) {
+    return item.enclosure['@_url'];
+  }
+
   // Try to extract from description HTML
-  const description = item.description?.[0] || item['content:encoded']?.[0] || '';
+  const description = item.description || item['content:encoded'] || '';
   const imgMatch = description.match(/<img[^>]+src="([^">]+)"/);
   if (imgMatch) {
     return imgMatch[1];
   }
-  
+
   return undefined;
 }
 
@@ -63,23 +71,31 @@ function extractImageUrl(item: any): string | undefined {
  */
 async function parseRSSFeed(xml: string, source: string): Promise<NewsItem[]> {
   try {
-    const result = await parseStringPromise(xml);
-    
+    const parser = new XMLParser({
+      ignoreAttributes: false,
+      attributeNamePrefix: "@_"
+    });
+    const result = parser.parse(xml);
+
     // Handle different RSS formats
-    const items = result.rss?.channel?.[0]?.item || result.feed?.entry || [];
-    
+    let items = [];
+    if (result.rss && result.rss.channel && result.rss.channel.item) {
+      items = Array.isArray(result.rss.channel.item) ? result.rss.channel.item : [result.rss.channel.item];
+    } else if (result.feed && result.feed.entry) {
+      items = Array.isArray(result.feed.entry) ? result.feed.entry : [result.feed.entry];
+    }
+
     return items.slice(0, 10).map((item: any) => {
       // Handle both RSS 2.0 and Atom formats
-      const title = item.title?.[0]?._ || item.title?.[0] || '';
-      const description = 
-        item.description?.[0] || 
-        item.summary?.[0]?._ || 
-        item.summary?.[0] || 
-        item['content:encoded']?.[0] || 
+      const title = item.title || '';
+      const description =
+        item.description ||
+        item.summary ||
+        item['content:encoded'] ||
         '';
-      
+
       // Clean HTML from description
-      const cleanDescription = description
+      const cleanDescription = typeof description === 'string' ? description
         .replace(/<[^>]*>/g, '')
         .replace(/&nbsp;/g, ' ')
         .replace(/&amp;/g, '&')
@@ -87,21 +103,24 @@ async function parseRSSFeed(xml: string, source: string): Promise<NewsItem[]> {
         .replace(/&gt;/g, '>')
         .replace(/&quot;/g, '"')
         .trim()
-        .substring(0, 200) + (description.length > 200 ? '...' : '');
-      
-      const link = item.link?.[0]?._ || item.link?.[0] || item.id?.[0] || '';
-      const pubDate = item.pubDate?.[0] || item.published?.[0] || item.updated?.[0] || new Date().toISOString();
+        .substring(0, 200) + (description.length > 200 ? '...' : '') : '';
+
+      const link = item.link || item.id || '';
+      // Handle Atom link object/array
+      const finalLink = typeof link === 'string' ? link : (link['@_href'] || (Array.isArray(link) ? link[0]['@_href'] : '#'));
+
+      const pubDate = item.pubDate || item.published || item.updated || new Date().toISOString();
       const imageUrl = extractImageUrl(item);
-      const category = item.category?.[0]?._ || item.category?.[0] || undefined;
-      
+      const category = item.category || undefined;
+
       return {
-        title: typeof title === 'string' ? title : title?._ || 'No title',
+        title: typeof title === 'string' ? title : 'No title',
         description: cleanDescription,
-        link: typeof link === 'string' ? link : link?.href || '#',
+        link: finalLink,
         pubDate,
         source,
         imageUrl,
-        category,
+        category: typeof category === 'string' ? category : undefined,
       };
     }).filter((item: NewsItem) => item.title && item.link); // Filter out invalid items
   } catch (error) {
@@ -116,7 +135,7 @@ async function parseRSSFeed(xml: string, source: string): Promise<NewsItem[]> {
 async function fetchWithTimeout(url: string, timeout = 5000): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
-  
+
   try {
     const response = await fetch(url, {
       signal: controller.signal,
@@ -132,27 +151,30 @@ async function fetchWithTimeout(url: string, timeout = 5000): Promise<Response> 
   }
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<NewsResponse>
-) {
-  // Add CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+export default async function handler(req: Request) {
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Content-Type': 'application/json',
+  };
 
   // Handle OPTIONS request
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return new Response(null, { status: 200, headers });
   }
 
   if (req.method !== 'GET') {
-    return res.status(405).json({ success: false, news: [], error: 'Method not allowed' });
+    return new Response(
+      JSON.stringify({ success: false, news: [], error: 'Method not allowed' }),
+      { status: 405, headers }
+    );
   }
 
-  const { sources } = req.query;
-  const selectedSources = sources 
-    ? (typeof sources === 'string' ? sources.split(',') : sources)
+  const url = new URL(req.url);
+  const sourcesParam = url.searchParams.get('sources');
+  const selectedSources = sourcesParam
+    ? sourcesParam.split(',')
     : ['thestar', 'bernama', 'bbc'];
 
   try {
@@ -162,12 +184,12 @@ export default async function handler(
         try {
           const url = RSS_FEEDS[source as keyof typeof RSS_FEEDS];
           const response = await fetchWithTimeout(url, 8000);
-          
+
           if (!response.ok) {
             console.error(`Failed to fetch ${source}: ${response.status}`);
             return [];
           }
-          
+
           const xml = await response.text();
           return await parseRSSFeed(xml, source);
         } catch (error) {
@@ -183,18 +205,23 @@ export default async function handler(
     allNews.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
 
     // Return top 50 articles
-    return res.status(200).json({
-      success: true,
-      news: allNews.slice(0, 50),
-    });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        news: allNews.slice(0, 50),
+      }),
+      { status: 200, headers }
+    );
   } catch (error) {
     console.error('Error fetching news:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch news';
-    return res.status(500).json({
-      success: false,
-      news: [],
-      error: errorMessage,
-    });
+    return new Response(
+      JSON.stringify({
+        success: false,
+        news: [],
+        error: errorMessage,
+      }),
+      { status: 500, headers }
+    );
   }
 }
-
