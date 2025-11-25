@@ -1,6 +1,8 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
 
 # 🇲🇾 MyPeta - Malaysian Data Visualization & News Platform
+# 🇲🇾 MyPeta - Malaysian Data Visualization & News Platform
+# 🇲🇾 MyPeta - Malaysian Data Visualization & News Platform
 
 A modern, full-stack web application featuring interactive data visualizations, community polls, and real-time news aggregation for Malaysia.
 
