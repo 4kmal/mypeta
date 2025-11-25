@@ -74,10 +74,13 @@ const About = () => {
         <main className="max-w-4xl mx-auto px-4 pt-8">
           {/* Hero Section */}
           <div className="text-center mb-12">
-            <div className="lg:w-128 h-128 mx-auto mb-6 absolute left-0 right-0 -mt-88">
-              <Lottie animationData={globeAnimationData} loop={true} style={{ width: '100%', height: '100%' }} />
+            <div className="max-w-xl mx-auto mb-6 relative">
+              <img src="/images/map/map-white.png" alt="My Peta" className="w-full h-full object-contain opacity-20" />
             </div>
-            <h1 className="text-4xl font-bold text-zinc-800 dark:text-zinc-100 mb-4 mt-60">
+            {/* <div className="lg:w-128 h-128 mx-auto mb-6 absolute left-0 right-0 -mt-88">
+              <Lottie animationData={globeAnimationData} loop={true} style={{ width: '100%', height: '100%' }} />
+            </div> */}
+            <h1 className="text-4xl font-bold text-zinc-800 dark:text-zinc-100 mb-4">
               {title}
             </h1>
             <p className="text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
