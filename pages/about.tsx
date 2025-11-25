@@ -77,9 +77,6 @@ const About = () => {
             <div className="max-w-xl mx-auto mb-6 relative">
               <img src="/images/map/map-white.png" alt="My Peta" className="w-full h-full object-contain opacity-20" />
             </div>
-            {/* <div className="lg:w-128 h-128 mx-auto mb-6 absolute left-0 right-0 -mt-88">
-              <Lottie animationData={globeAnimationData} loop={true} style={{ width: '100%', height: '100%' }} />
-            </div> */}
             <h1 className="text-4xl font-bold text-zinc-800 dark:text-zinc-100 mb-4">
               {title}
             </h1>
