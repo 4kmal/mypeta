@@ -22,25 +22,13 @@ import { useUserProfile } from "@/contexts/UserProfileContext";
 import { states } from "@/data/states";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-// X (Twitter) Logo Component
-const XLogo = ({ className }: { className?: string }) => (
-  <svg
-    viewBox="0 0 24 24"
-    className={className}
-    fill="currentColor"
-    aria-hidden="true"
-  >
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-  </svg>
-);
-
 // Helper function to get flag image path from state ID
 const getFlagImagePath = (stateId: string): string => {
   const flagMapping: Record<string, string> = {
-    'negerisembilan': 'negeri-sembilan',
-    'malacca': 'melaka',
-    'kualalumpur': 'kuala-lumpur',
-    'penang': 'penang',
+    negerisembilan: "negeri-sembilan",
+    malacca: "melaka",
+    kualalumpur: "kuala-lumpur",
+    penang: "penang",
   };
 
   const flagName = flagMapping[stateId] || stateId;
@@ -70,14 +58,14 @@ const AuthButton = () => {
         redirectUrl: window.location.href,
       });
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error("Login failed:", error);
     }
   };
 
   const handleProfileClick = () => {
     // On desktop, navigate to profile page
     if (window.innerWidth >= 768) {
-      router.push('/profile');
+      router.push("/profile");
     } else {
       // On mobile, keep the dialog behavior
       setShowProfile(true);
@@ -86,27 +74,23 @@ const AuthButton = () => {
 
   if (!isLoaded) {
     return (
-      <Button
-        variant="outline"
-        size="sm"
-        disabled
-        className="gap-2"
-      >
+      <Button variant="outline" size="sm" disabled className="gap-2">
         <div className="h-4 w-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
       </Button>
     );
   }
 
   if (isSignedIn && user) {
-    // Get user's X/Twitter account info from external accounts
-    const twitterAccount = user.externalAccounts?.find(account => 
-      account.verification?.strategy === 'oauth_twitter' || 
-      (account as any).provider === 'oauth_x'
-    );
     const profilePicture = user.imageUrl || null;
-    const displayName = twitterAccount?.username || user.username || user.firstName || user.emailAddresses[0]?.emailAddress?.split('@')[0] || "User";
+    const displayName =
+      user.username ||
+      user.firstName ||
+      user.emailAddresses[0]?.emailAddress?.split("@")[0] ||
+      "User";
     const email = user.emailAddresses[0]?.emailAddress || null;
-    const selectedStateData = states.find(state => state.id === selectedState);
+    const selectedStateData = states.find(
+      (state) => state.id === selectedState
+    );
 
     return (
       <>
@@ -134,9 +118,7 @@ const AuthButton = () => {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Profile</DialogTitle>
-              <DialogDescription>
-                Welcome to Peta Malaysia
-              </DialogDescription>
+              <DialogDescription>Welcome to Peta Malaysia</DialogDescription>
             </DialogHeader>
             <div className="flex flex-col items-center gap-4 py-4">
               {profilePicture && (
@@ -168,16 +150,20 @@ const AuthButton = () => {
                         <Coins className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
                         <span>{stats.points} pts</span>
                       </div>
-                      
-                      <span className="text-zinc-400/30 font-extrabold dark:text-zinc-500/30">|</span>
-                      
+
+                      <span className="text-zinc-400/30 font-extrabold dark:text-zinc-500/30">
+                        |
+                      </span>
+
                       <div className="flex items-center gap-1.5">
                         <Zap className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
                         <span>LVL {getLevel()}</span>
                       </div>
-                      
-                      <span className="text-zinc-400/30 font-extrabold dark:text-zinc-500/30">|</span>
-                      
+
+                      <span className="text-zinc-400/30 font-extrabold dark:text-zinc-500/30">
+                        |
+                      </span>
+
                       <div className="flex items-center gap-1.5">
                         <Star className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
                         <span>{stats.exp} EXP</span>
@@ -196,14 +182,20 @@ const AuthButton = () => {
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
                             <p className="font-semibold mb-1">Points</p>
-                            <p className="text-sm">• Earn +10 points per vote</p>
-                            <p className="text-sm">• Creating a poll costs 200 points</p>
+                            <p className="text-sm">
+                              • Earn +10 points per vote
+                            </p>
+                            <p className="text-sm">
+                              • Creating a poll costs 200 points
+                            </p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                      
-                      <span className="text-zinc-400/30 font-extrabold dark:text-zinc-500/30">|</span>
-                      
+
+                      <span className="text-zinc-400/30 font-extrabold dark:text-zinc-500/30">
+                        |
+                      </span>
+
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -214,14 +206,20 @@ const AuthButton = () => {
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
                             <p className="font-semibold mb-1">Level</p>
-                            <p className="text-sm">Your current level based on total EXP</p>
-                            <p className="text-sm">• Level up every 1,000 EXP</p>
+                            <p className="text-sm">
+                              Your current level based on total EXP
+                            </p>
+                            <p className="text-sm">
+                              • Level up every 1,000 EXP
+                            </p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
-                      
-                      <span className="text-zinc-400/30 font-extrabold dark:text-zinc-500/30">|</span>
-                      
+
+                      <span className="text-zinc-400/30 font-extrabold dark:text-zinc-500/30">
+                        |
+                      </span>
+
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
@@ -231,9 +229,13 @@ const AuthButton = () => {
                             </div>
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
-                            <p className="font-semibold mb-1">Experience Points</p>
+                            <p className="font-semibold mb-1">
+                              Experience Points
+                            </p>
                             <p className="text-sm">• Earn +10 EXP per vote</p>
-                            <p className="text-sm">• Earn +200 EXP per poll created</p>
+                            <p className="text-sm">
+                              • Earn +200 EXP per poll created
+                            </p>
                           </TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
@@ -286,8 +288,8 @@ const AuthButton = () => {
         </Dialog>
 
         {/* State Selector Dialog (triggered from profile or auto-show after login) */}
-        <UserStateSelector 
-          isButton={false} 
+        <UserStateSelector
+          isButton={false}
           externalOpen={showStateSelectorDialog || undefined}
           onExternalOpenChange={setShowStateSelectorDialog}
         />
@@ -318,4 +320,3 @@ const AuthButton = () => {
 };
 
 export default AuthButton;
-

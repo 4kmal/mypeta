@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useUser } from '@clerk/nextjs';
-import { supabase } from '@/lib/supabase';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
+import { supabase } from "@/lib/supabase";
 
 export interface UserStats {
   points: number;
@@ -15,7 +15,10 @@ interface UserProfileContextType {
   stats: UserStats | null;
   addPoints: (amount: number) => Promise<void>;
   addExp: (amount: number) => Promise<boolean>;
-  addPointsAndExp: (pointsAmount: number, expAmount: number) => Promise<boolean>;
+  addPointsAndExp: (
+    pointsAmount: number,
+    expAmount: number
+  ) => Promise<boolean>;
   deductPoints: (amount: number) => Promise<boolean>;
   getLevel: () => number;
   getExpForNextLevel: () => number;
@@ -24,7 +27,9 @@ interface UserProfileContextType {
   refreshUserData: () => Promise<void>;
 }
 
-const UserProfileContext = createContext<UserProfileContextType | undefined>(undefined);
+const UserProfileContext = createContext<UserProfileContextType | undefined>(
+  undefined
+);
 
 // Calculate level from EXP (level 1 = 0-999 EXP, level 2 = 1000-1999, etc.)
 const calculateLevel = (exp: number): number => {
@@ -46,9 +51,13 @@ const getExpProgressValue = (currentExp: number): number => {
   return (expInCurrentLevel / expNeededForNextLevel) * 100;
 };
 
-export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const { user, isSignedIn, isLoaded } = useUser();
-  const [selectedState, setSelectedStateInternal] = useState<string | null>(null);
+  const [selectedState, setSelectedStateInternal] = useState<string | null>(
+    null
+  );
   const [showStateSelector, setShowStateSelector] = useState(false);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [internalUserId, setInternalUserId] = useState<string | null>(null);
@@ -60,40 +69,37 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
 
     try {
-      // Get X/Twitter account from external accounts
-      const twitterAccount = user.externalAccounts?.find(account => 
-        account.verification?.strategy === 'oauth_twitter' || 
-        (account as any).provider === 'oauth_x'
-      );
-      const username = twitterAccount?.username || user.username || user.firstName || user.emailAddresses[0]?.emailAddress?.split('@')[0];
+      const username =
+        user.username ||
+        user.firstName ||
+        user.emailAddresses[0]?.emailAddress?.split("@")[0];
       const email = user.emailAddresses[0]?.emailAddress;
       const profilePicture = user.imageUrl;
 
-      const { data, error } = await supabase
-        .rpc('get_or_create_user', {
-          p_clerk_user_id: user.id,
-          p_username: username,
-          p_email: email,
-          p_profile_picture_url: profilePicture
-        });
+      const { data, error } = await supabase.rpc("get_or_create_user", {
+        p_clerk_user_id: user.id,
+        p_username: username,
+        p_email: email,
+        p_profile_picture_url: profilePicture,
+      });
 
       if (error) {
-        console.error('[UserProfile] Error loading user data:', error);
+        console.error("[UserProfile] Error loading user data:", error);
         return;
       }
 
       if (!data || data.length === 0) {
-        console.error('[UserProfile] No data returned from get_or_create_user');
+        console.error("[UserProfile] No data returned from get_or_create_user");
         return;
       }
 
       const userData = data[0];
-      
+
       setInternalUserId(userData.user_id);
       setSelectedStateInternal(userData.selected_state);
       setStats({
         points: userData.points,
-        exp: userData.exp
+        exp: userData.exp,
       });
 
       // Show state selector if no state selected (for new users)
@@ -101,12 +107,13 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setShowStateSelector(true);
       }
     } catch (error) {
-      console.error('[UserProfile] Exception in loadUserData:', error);
-      
+      console.error("[UserProfile] Exception in loadUserData:", error);
+
       // Show user-friendly error
-      if (typeof window !== 'undefined') {
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-        console.error('[UserProfile] Failed to load user profile:', errorMsg);
+      if (typeof window !== "undefined") {
+        const errorMsg =
+          error instanceof Error ? error.message : "Unknown error";
+        console.error("[UserProfile] Failed to load user profile:", errorMsg);
       }
     }
   };
@@ -125,112 +132,114 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const setSelectedState = async (state: string) => {
     if (!user) {
-      console.error('[UserProfile] Cannot set state - no user');
+      console.error("[UserProfile] Cannot set state - no user");
       return;
     }
 
     try {
-      const { error } = await supabase
-        .rpc('update_user_state', { 
-          p_state_id: state,
-          p_clerk_user_id: user.id
-        });
+      const { error } = await supabase.rpc("update_user_state", {
+        p_state_id: state,
+        p_clerk_user_id: user.id,
+      });
 
       if (error) {
-        console.error('[UserProfile] Error updating state:', error);
+        console.error("[UserProfile] Error updating state:", error);
         return;
       }
 
       setSelectedStateInternal(state);
       setShowStateSelector(false);
-      
+
       // Reload user data to ensure everything is in sync
       await loadUserData();
     } catch (error) {
-      console.error('[UserProfile] Exception in setSelectedState:', error);
+      console.error("[UserProfile] Exception in setSelectedState:", error);
     }
   };
 
   const addPoints = async (amount: number) => {
     if (!user || !stats) return;
-    
+
     try {
       // Optimistically update UI
-      setStats(prevStats => {
+      setStats((prevStats) => {
         if (!prevStats) return prevStats;
         return { ...prevStats, points: prevStats.points + amount };
       });
 
       // Sync to backend
-      const { error } = await supabase.rpc('update_user_points_exp', {
+      const { error } = await supabase.rpc("update_user_points_exp", {
         p_clerk_user_id: user.id,
         p_points_delta: amount,
-        p_exp_delta: 0
+        p_exp_delta: 0,
       });
 
       if (error) {
-        console.error('[UserProfile] Error updating points:', error);
+        console.error("[UserProfile] Error updating points:", error);
         // Revert on error
-        setStats(prevStats => {
+        setStats((prevStats) => {
           if (!prevStats) return prevStats;
           return { ...prevStats, points: prevStats.points - amount };
         });
       }
     } catch (error) {
-      console.error('[UserProfile] Exception in addPoints:', error);
+      console.error("[UserProfile] Exception in addPoints:", error);
     }
   };
 
   const addExp = async (amount: number): Promise<boolean> => {
     if (!user || !stats) return false;
-    
+
     const oldLevel = calculateLevel(stats.exp);
     const newExp = stats.exp + amount;
     const newLevel = calculateLevel(newExp);
     const leveledUp = newLevel > oldLevel;
-    
+
     try {
       // Optimistically update UI
-      setStats(prevStats => {
+      setStats((prevStats) => {
         if (!prevStats) return prevStats;
         return { ...prevStats, exp: newExp };
       });
 
       // Sync to backend
-      const { error } = await supabase.rpc('update_user_points_exp', {
+      const { error } = await supabase.rpc("update_user_points_exp", {
         p_clerk_user_id: user.id,
         p_points_delta: 0,
-        p_exp_delta: amount
+        p_exp_delta: amount,
       });
 
       if (error) {
-        console.error('[UserProfile] Error updating exp:', error);
+        console.error("[UserProfile] Error updating exp:", error);
         // Revert on error
-        setStats(prevStats => {
+        setStats((prevStats) => {
           if (!prevStats) return prevStats;
           return { ...prevStats, exp: prevStats.exp };
         });
         return false;
       }
     } catch (error) {
-      console.error('[UserProfile] Exception in addExp:', error);
+      console.error("[UserProfile] Exception in addExp:", error);
       return false;
     }
-    
+
     return leveledUp;
   };
 
-  const addPointsAndExp = async (pointsAmount: number, expAmount: number): Promise<boolean> => {
+  const addPointsAndExp = async (
+    pointsAmount: number,
+    expAmount: number
+  ): Promise<boolean> => {
     if (!user || !stats) return false;
-    
+
     const oldLevel = calculateLevel(stats.exp);
     const newExp = stats.exp + expAmount;
     const newLevel = calculateLevel(newExp);
     const leveledUp = newLevel > oldLevel;
-    
+
     try {
       // Optimistically update UI
-      setStats(prevStats => {
+      setStats((prevStats) => {
         if (!prevStats) return prevStats;
         return {
           ...prevStats,
@@ -240,16 +249,16 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
       });
 
       // Sync to backend
-      const { error } = await supabase.rpc('update_user_points_exp', {
+      const { error } = await supabase.rpc("update_user_points_exp", {
         p_clerk_user_id: user.id,
         p_points_delta: pointsAmount,
-        p_exp_delta: expAmount
+        p_exp_delta: expAmount,
       });
 
       if (error) {
-        console.error('[UserProfile] Error updating points and exp:', error);
+        console.error("[UserProfile] Error updating points and exp:", error);
         // Revert on error
-        setStats(prevStats => {
+        setStats((prevStats) => {
           if (!prevStats) return prevStats;
           return {
             ...prevStats,
@@ -260,35 +269,35 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
         return false;
       }
     } catch (error) {
-      console.error('[UserProfile] Exception in addPointsAndExp:', error);
+      console.error("[UserProfile] Exception in addPointsAndExp:", error);
       return false;
     }
-    
+
     return leveledUp;
   };
 
   const deductPoints = async (amount: number): Promise<boolean> => {
     if (!user || !stats) return false;
     if (stats.points < amount) return false;
-    
+
     try {
       // Optimistically update UI
-      setStats(prevStats => {
+      setStats((prevStats) => {
         if (!prevStats) return prevStats;
         return { ...prevStats, points: prevStats.points - amount };
       });
 
       // Sync to backend
-      const { error } = await supabase.rpc('update_user_points_exp', {
+      const { error } = await supabase.rpc("update_user_points_exp", {
         p_clerk_user_id: user.id,
         p_points_delta: -amount,
-        p_exp_delta: 0
+        p_exp_delta: 0,
       });
 
       if (error) {
-        console.error('[UserProfile] Error deducting points:', error);
+        console.error("[UserProfile] Error deducting points:", error);
         // Revert on error
-        setStats(prevStats => {
+        setStats((prevStats) => {
           if (!prevStats) return prevStats;
           return { ...prevStats, points: prevStats.points + amount };
         });
@@ -297,7 +306,7 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       return true;
     } catch (error) {
-      console.error('[UserProfile] Exception in deductPoints:', error);
+      console.error("[UserProfile] Exception in deductPoints:", error);
       return false;
     }
   };
@@ -322,20 +331,20 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (!internalUserId) return;
 
     const subscription = supabase
-      .channel('user-changes')
+      .channel("user-changes")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'users',
-          filter: `id=eq.${internalUserId}`
+          event: "UPDATE",
+          schema: "public",
+          table: "users",
+          filter: `id=eq.${internalUserId}`,
         },
         (payload) => {
           const newData = payload.new as any;
           setStats({
             points: newData.points,
-            exp: newData.exp
+            exp: newData.exp,
           });
         }
       )
@@ -373,8 +382,7 @@ export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({ c
 export const useUserProfile = () => {
   const context = useContext(UserProfileContext);
   if (context === undefined) {
-    throw new Error('useUserProfile must be used within a UserProfileProvider');
+    throw new Error("useUserProfile must be used within a UserProfileProvider");
   }
   return context;
 };
-

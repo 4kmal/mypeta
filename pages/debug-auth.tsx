@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
-import { useUser } from '@clerk/nextjs';
-import { useUserProfile } from '@/contexts/UserProfileContext';
-import { supabase } from '@/lib/supabase';
-import Head from 'next/head';
+import { useEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs";
+import { useUserProfile } from "@/contexts/UserProfileContext";
+import { supabase } from "@/lib/supabase";
+import Head from "next/head";
 
 export default function DebugAuth() {
   const { user, isSignedIn, isLoaded } = useUser();
@@ -10,8 +10,16 @@ export default function DebugAuth() {
   const [testResults, setTestResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const addResult = (test: string, status: 'pass' | 'fail' | 'info', message: string, data?: any) => {
-    setTestResults(prev => [...prev, { test, status, message, data, timestamp: new Date().toISOString() }]);
+  const addResult = (
+    test: string,
+    status: "pass" | "fail" | "info",
+    message: string,
+    data?: any
+  ) => {
+    setTestResults((prev) => [
+      ...prev,
+      { test, status, message, data, timestamp: new Date().toISOString() },
+    ]);
   };
 
   const runTests = async () => {
@@ -20,101 +28,131 @@ export default function DebugAuth() {
 
     try {
       // Test 1: Clerk loaded
-      addResult('Clerk SDK', isLoaded ? 'pass' : 'fail', `Clerk SDK loaded: ${isLoaded}`);
+      addResult(
+        "Clerk SDK",
+        isLoaded ? "pass" : "fail",
+        `Clerk SDK loaded: ${isLoaded}`
+      );
 
       // Test 2: User signed in
-      addResult('Authentication', isSignedIn ? 'pass' : 'fail', `User signed in: ${isSignedIn}`);
+      addResult(
+        "Authentication",
+        isSignedIn ? "pass" : "fail",
+        `User signed in: ${isSignedIn}`
+      );
 
       if (!isSignedIn || !user) {
-        addResult('Tests', 'info', 'Please sign in to continue tests');
+        addResult("Tests", "info", "Please sign in to continue tests");
         setLoading(false);
         return;
       }
 
       // Test 3: User data
-      addResult('Clerk User', 'info', `User ID: ${user.id}`, {
+      addResult("Clerk User", "info", `User ID: ${user.id}`, {
         id: user.id,
         username: user.username,
         firstName: user.firstName,
         email: user.emailAddresses[0]?.emailAddress,
         imageUrl: user.imageUrl,
-        externalAccounts: user.externalAccounts?.length || 0
+        externalAccounts: user.externalAccounts?.length || 0,
       });
 
       // Test 4: Supabase connection
       try {
         const { data: pingData, error: pingError } = await supabase
-          .from('users')
-          .select('count')
+          .from("users")
+          .select("count")
           .limit(1);
-        
-        addResult('Supabase Connection', !pingError ? 'pass' : 'fail', 
-          !pingError ? 'Connected to Supabase' : `Error: ${pingError.message}`
+
+        addResult(
+          "Supabase Connection",
+          !pingError ? "pass" : "fail",
+          !pingError ? "Connected to Supabase" : `Error: ${pingError.message}`
         );
       } catch (error: any) {
-        addResult('Supabase Connection', 'fail', `Exception: ${error.message}`);
+        addResult("Supabase Connection", "fail", `Exception: ${error.message}`);
       }
 
       // Test 5: get_or_create_user function
       try {
-        const twitterAccount = user.externalAccounts?.find(account => 
-          account.verification?.strategy === 'oauth_twitter' || 
-          (account as any).provider === 'oauth_x'
-        );
-        const username = twitterAccount?.username || user.username || user.firstName || user.emailAddresses[0]?.emailAddress?.split('@')[0];
+        const username =
+          user.username ||
+          user.firstName ||
+          user.emailAddresses[0]?.emailAddress?.split("@")[0];
         const email = user.emailAddresses[0]?.emailAddress;
         const profilePicture = user.imageUrl;
 
-        const { data: userData, error: userError } = await supabase
-          .rpc('get_or_create_user', {
+        const { data: userData, error: userError } = await supabase.rpc(
+          "get_or_create_user",
+          {
             p_clerk_user_id: user.id,
             p_username: username,
             p_email: email,
-            p_profile_picture_url: profilePicture
-          });
+            p_profile_picture_url: profilePicture,
+          }
+        );
 
         if (userError) {
-          addResult('get_or_create_user', 'fail', `Error: ${userError.message}`, userError);
+          addResult(
+            "get_or_create_user",
+            "fail",
+            `Error: ${userError.message}`,
+            userError
+          );
         } else if (!userData || userData.length === 0) {
-          addResult('get_or_create_user', 'fail', 'No data returned');
+          addResult("get_or_create_user", "fail", "No data returned");
         } else {
-          addResult('get_or_create_user', 'pass', 'User data retrieved', userData[0]);
+          addResult(
+            "get_or_create_user",
+            "pass",
+            "User data retrieved",
+            userData[0]
+          );
         }
       } catch (error: any) {
-        addResult('get_or_create_user', 'fail', `Exception: ${error.message}`);
+        addResult("get_or_create_user", "fail", `Exception: ${error.message}`);
       }
 
       // Test 6: UserProfileContext state
-      addResult('UserProfileContext', internalUserId ? 'pass' : 'fail', 
-        internalUserId ? `Internal User ID: ${internalUserId}` : 'Internal User ID is null',
+      addResult(
+        "UserProfileContext",
+        internalUserId ? "pass" : "fail",
+        internalUserId
+          ? `Internal User ID: ${internalUserId}`
+          : "Internal User ID is null",
         {
           internalUserId,
           selectedState,
-          stats
+          stats,
         }
       );
 
       // Test 7: Update state test (if user has selected a state)
       if (selectedState) {
         try {
-          const { error: stateError } = await supabase
-            .rpc('update_user_state', { 
+          const { error: stateError } = await supabase.rpc(
+            "update_user_state",
+            {
               p_state_id: selectedState,
-              p_clerk_user_id: user.id
-            });
+              p_clerk_user_id: user.id,
+            }
+          );
 
-          addResult('update_user_state', !stateError ? 'pass' : 'fail',
-            !stateError ? `Successfully called with state: ${selectedState}` : `Error: ${stateError.message}`
+          addResult(
+            "update_user_state",
+            !stateError ? "pass" : "fail",
+            !stateError
+              ? `Successfully called with state: ${selectedState}`
+              : `Error: ${stateError.message}`
           );
         } catch (error: any) {
-          addResult('update_user_state', 'fail', `Exception: ${error.message}`);
+          addResult("update_user_state", "fail", `Exception: ${error.message}`);
         }
       } else {
-        addResult('update_user_state', 'info', 'Skipped - no state selected');
+        addResult("update_user_state", "info", "Skipped - no state selected");
       }
-
     } catch (error: any) {
-      addResult('Test Suite', 'fail', `Fatal error: ${error.message}`);
+      addResult("Test Suite", "fail", `Fatal error: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -128,19 +166,27 @@ export default function DebugAuth() {
 
   const getStatusEmoji = (status: string) => {
     switch (status) {
-      case 'pass': return '✅';
-      case 'fail': return '❌';
-      case 'info': return 'ℹ️';
-      default: return '❓';
+      case "pass":
+        return "✅";
+      case "fail":
+        return "❌";
+      case "info":
+        return "ℹ️";
+      default:
+        return "❓";
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pass': return 'text-green-600 dark:text-green-400';
-      case 'fail': return 'text-red-600 dark:text-red-400';
-      case 'info': return 'text-blue-600 dark:text-blue-400';
-      default: return 'text-gray-600 dark:text-gray-400';
+      case "pass":
+        return "text-green-600 dark:text-green-400";
+      case "fail":
+        return "text-red-600 dark:text-red-400";
+      case "info":
+        return "text-blue-600 dark:text-blue-400";
+      default:
+        return "text-gray-600 dark:text-gray-400";
     }
   };
 
@@ -149,7 +195,7 @@ export default function DebugAuth() {
       <Head>
         <title>Auth Debug - Peta Malaysia</title>
       </Head>
-      
+
       <div className="min-h-screen bg-white dark:bg-gray-900 p-8">
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
@@ -167,7 +213,7 @@ export default function DebugAuth() {
               disabled={loading}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
-              {loading ? 'Running Tests...' : 'Run Tests Again'}
+              {loading ? "Running Tests..." : "Run Tests Again"}
             </button>
             <button
               onClick={() => window.location.reload()}
@@ -185,18 +231,26 @@ export default function DebugAuth() {
 
           <div className="space-y-4">
             {testResults.map((result, index) => (
-              <div 
+              <div
                 key={index}
                 className={`p-4 rounded-lg border-2 ${
-                  result.status === 'pass' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' :
-                  result.status === 'fail' ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' :
-                  'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                  result.status === "pass"
+                    ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                    : result.status === "fail"
+                    ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+                    : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  <span className="text-2xl">{getStatusEmoji(result.status)}</span>
+                  <span className="text-2xl">
+                    {getStatusEmoji(result.status)}
+                  </span>
                   <div className="flex-1">
-                    <h3 className={`font-bold text-lg mb-1 ${getStatusColor(result.status)}`}>
+                    <h3
+                      className={`font-bold text-lg mb-1 ${getStatusColor(
+                        result.status
+                      )}`}
+                    >
                       {result.test}
                     </h3>
                     <p className="text-gray-700 dark:text-gray-300 mb-2">
@@ -224,38 +278,66 @@ export default function DebugAuth() {
             </h2>
             <div className="space-y-2 text-sm">
               <div className="flex gap-2">
-                <span className="font-semibold text-gray-700 dark:text-gray-300">Clerk Loaded:</span>
-                <span className="text-gray-600 dark:text-gray-400">{isLoaded ? 'Yes' : 'No'}</span>
+                <span className="font-semibold text-gray-700 dark:text-gray-300">
+                  Clerk Loaded:
+                </span>
+                <span className="text-gray-600 dark:text-gray-400">
+                  {isLoaded ? "Yes" : "No"}
+                </span>
               </div>
               <div className="flex gap-2">
-                <span className="font-semibold text-gray-700 dark:text-gray-300">Signed In:</span>
-                <span className="text-gray-600 dark:text-gray-400">{isSignedIn ? 'Yes' : 'No'}</span>
+                <span className="font-semibold text-gray-700 dark:text-gray-300">
+                  Signed In:
+                </span>
+                <span className="text-gray-600 dark:text-gray-400">
+                  {isSignedIn ? "Yes" : "No"}
+                </span>
               </div>
               <div className="flex gap-2">
-                <span className="font-semibold text-gray-700 dark:text-gray-300">Clerk User ID:</span>
-                <span className="text-gray-600 dark:text-gray-400 font-mono text-xs">{user?.id || 'null'}</span>
+                <span className="font-semibold text-gray-700 dark:text-gray-300">
+                  Clerk User ID:
+                </span>
+                <span className="text-gray-600 dark:text-gray-400 font-mono text-xs">
+                  {user?.id || "null"}
+                </span>
               </div>
               <div className="flex gap-2">
-                <span className="font-semibold text-gray-700 dark:text-gray-300">Internal User ID:</span>
-                <span className="text-gray-600 dark:text-gray-400 font-mono text-xs">{internalUserId || 'null'}</span>
+                <span className="font-semibold text-gray-700 dark:text-gray-300">
+                  Internal User ID:
+                </span>
+                <span className="text-gray-600 dark:text-gray-400 font-mono text-xs">
+                  {internalUserId || "null"}
+                </span>
               </div>
               <div className="flex gap-2">
-                <span className="font-semibold text-gray-700 dark:text-gray-300">Selected State:</span>
-                <span className="text-gray-600 dark:text-gray-400">{selectedState || 'null'}</span>
+                <span className="font-semibold text-gray-700 dark:text-gray-300">
+                  Selected State:
+                </span>
+                <span className="text-gray-600 dark:text-gray-400">
+                  {selectedState || "null"}
+                </span>
               </div>
               <div className="flex gap-2">
-                <span className="font-semibold text-gray-700 dark:text-gray-300">Points:</span>
-                <span className="text-gray-600 dark:text-gray-400">{stats?.points ?? 'null'}</span>
+                <span className="font-semibold text-gray-700 dark:text-gray-300">
+                  Points:
+                </span>
+                <span className="text-gray-600 dark:text-gray-400">
+                  {stats?.points ?? "null"}
+                </span>
               </div>
               <div className="flex gap-2">
-                <span className="font-semibold text-gray-700 dark:text-gray-300">EXP:</span>
-                <span className="text-gray-600 dark:text-gray-400">{stats?.exp ?? 'null'}</span>
+                <span className="font-semibold text-gray-700 dark:text-gray-300">
+                  EXP:
+                </span>
+                <span className="text-gray-600 dark:text-gray-400">
+                  {stats?.exp ?? "null"}
+                </span>
               </div>
             </div>
           </div>
 
           <div className="mt-6 text-center">
-            <a 
+            <a
               href="/"
               className="text-blue-600 dark:text-blue-400 hover:underline"
             >
@@ -267,4 +349,3 @@ export default function DebugAuth() {
     </>
   );
 }
-
