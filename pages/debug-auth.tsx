@@ -233,13 +233,12 @@ export default function DebugAuth() {
             {testResults.map((result, index) => (
               <div
                 key={index}
-                className={`p-4 rounded-lg border-2 ${
-                  result.status === "pass"
-                    ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
-                    : result.status === "fail"
+                className={`p-4 rounded-lg border-2 ${result.status === "pass"
+                  ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                  : result.status === "fail"
                     ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
                     : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
-                }`}
+                  }`}
               >
                 <div className="flex items-start gap-3">
                   <span className="text-2xl">
