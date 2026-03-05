@@ -273,8 +273,11 @@ const PollsPage = () => {
   useEffect(() => {
     if (allPolls.length > 0) {
       loadPollResults();
+    } else if (!isLoadingPolls) {
+      // If loading polls finished and it's empty, we should stop showing results loading skeleton
+      setIsLoadingResults(false);
     }
-  }, [allPolls]);
+  }, [allPolls, isLoadingPolls]);
 
   // Load polls from Supabase
   const loadPolls = async () => {
@@ -1328,7 +1331,7 @@ const PollsPage = () => {
                   </div>
                 </div>
               ))
-            ) : (
+            ) : filteredPolls.length > 0 ? (
               filteredPolls.map((poll, index) => {
                 const hasVoted = userVotes[poll.id];
                 const results = pollResults[poll.id];
@@ -1374,14 +1377,14 @@ const PollsPage = () => {
                                 >
                                   <div
                                     className={`flex items-center gap-1.5 ${isSelected
-                                        ? 'text-emerald-700 dark:text-emerald-400 font-semibold'
-                                        : isEnded && !hasVoted
-                                          ? 'text-zinc-500 dark:text-zinc-500'
-                                          : 'text-zinc-800 dark:text-zinc-200'
+                                      ? 'text-emerald-700 dark:text-emerald-400 font-semibold'
+                                      : isEnded && !hasVoted
+                                        ? 'text-zinc-500 dark:text-zinc-500'
+                                        : 'text-zinc-800 dark:text-zinc-200'
                                       }`}
                                   >
                                     <span className="text-xs font-medium tracking-tight">
-                                    {option.emoji} {option.label}
+                                      {option.emoji} {option.label}
                                     </span>
                                     {isSelected && (
                                       <CheckCircle className="h-3 w-3 text-emerald-600 dark:text-emerald-500" />
@@ -1410,24 +1413,24 @@ const PollsPage = () => {
                                   animate={{ flexBasis: flexBasis }}
                                   transition={{ duration: 0.5, ease: 'easeOut' }}
                                   className={`relative flex items-center justify-center ${showResults
-                                      ? isSelected
-                                        ? 'bg-emerald-500 dark:bg-emerald-600'
-                                        : 'bg-zinc-300 dark:bg-zinc-700'
-                                      : 'bg-zinc-200 dark:bg-zinc-800'
+                                    ? isSelected
+                                      ? 'bg-emerald-500 dark:bg-emerald-600'
+                                      : 'bg-zinc-300 dark:bg-zinc-700'
+                                    : 'bg-zinc-200 dark:bg-zinc-800'
                                     }`}
                                 >
                                   <span className={`text-xs font-bold ${showResults
-                                      ? isSelected
-                                        ? 'text-white'
-                                        : 'text-zinc-700 dark:text-zinc-300'
-                                      : 'text-zinc-400 dark:text-zinc-500'
+                                    ? isSelected
+                                      ? 'text-white'
+                                      : 'text-zinc-700 dark:text-zinc-300'
+                                    : 'text-zinc-400 dark:text-zinc-500'
                                     }`}>
                                     {showResults ? `${percentage.toFixed(1)}%` : '?%'}
                                   </span>
                                 </motion.div>
                               );
                             })}
-                            
+
                             {/* Vote Buttons Overlaid on Top of Bar */}
                             {!hasVoted && !isPollEnded && (
                               <div className="absolute inset-0 flex items-center justify-between px-0 z-10 pointer-events-none">
@@ -1521,43 +1524,43 @@ const PollsPage = () => {
                       {/* Bottom Actions - Minimalistic Design */}
                       <div className="mt-4">
                         <div className="flex items-center justify-between">
-                        {/* Total Votes and Time - Bottom Left */}
-                        <div className="flex items-center gap-3">
-                          {/* Live/Ended Badge */}
-                          {poll.endDate ? (
-                            <span className={`px-2 py-1 rounded text-xs font-medium ${isPollLive(poll)
-                              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                              : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                              }`}>
-                              {isPollLive(poll) ? t.live : t.ended}
-                            </span>
-                          ) : (
-                            <span className="px-2 py-1 rounded text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
-                              {t.live}
-                            </span>
-                          )}
-                          {/* Total Votes - Always show */}
-                          {results && (
-                            <p className={`text-xs ${isPollEnded && !hasVoted
+                          {/* Total Votes and Time - Bottom Left */}
+                          <div className="flex items-center gap-3">
+                            {/* Live/Ended Badge */}
+                            {poll.endDate ? (
+                              <span className={`px-2 py-1 rounded text-xs font-medium ${isPollLive(poll)
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                                }`}>
+                                {isPollLive(poll) ? t.live : t.ended}
+                              </span>
+                            ) : (
+                              <span className="px-2 py-1 rounded text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                                {t.live}
+                              </span>
+                            )}
+                            {/* Total Votes - Always show */}
+                            {results && (
+                              <p className={`text-xs ${isPollEnded && !hasVoted
                                 ? 'text-zinc-500 dark:text-zinc-500'
                                 : 'text-zinc-600 dark:text-zinc-400'
-                              }`}>
-                              <span className="font-bold">{results.totalVotes}</span> {t.votes}
-                            </p>
-                          )}
-                          {/* Time ago */}
-                          <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
-                            <Clock className="h-3 w-3" />
-                            <span>{formatDate(poll.createdAt)}</span>
-                          </div>
-                          {/* Ended date - show if poll has ended */}
-                          {isPollEnded && poll.endDate && (
-                            <div className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
-                              <Calendar className="h-3 w-3" />
-                              <span className="font-medium">{t.ended}: {formatEndDate(poll.endDate)}</span>
+                                }`}>
+                                <span className="font-bold">{results.totalVotes}</span> {t.votes}
+                              </p>
+                            )}
+                            {/* Time ago */}
+                            <div className="flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
+                              <Clock className="h-3 w-3" />
+                              <span>{formatDate(poll.createdAt)}</span>
                             </div>
-                          )}
-                        </div>
+                            {/* Ended date - show if poll has ended */}
+                            {isPollEnded && poll.endDate && (
+                              <div className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+                                <Calendar className="h-3 w-3" />
+                                <span className="font-medium">{t.ended}: {formatEndDate(poll.endDate)}</span>
+                              </div>
+                            )}
+                          </div>
 
                           {/* Action Buttons - Bottom Right (Icons Only) */}
                           <div className="flex items-center gap-2">
@@ -1592,6 +1595,28 @@ const PollsPage = () => {
                   </motion.div>
                 );
               })
+            ) : (
+              <div className="col-span-full py-20 text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 mb-4">
+                  <HelpCircle className="w-8 h-8 text-zinc-400" />
+                </div>
+                <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 mb-2">No Polls Found</h3>
+                <p className="text-zinc-600 dark:text-zinc-400 max-w-xs mx-auto">
+                  {selectedCategory === 'all'
+                    ? "We couldn't find any polls. Be the first to create one!"
+                    : `No polls found in the ${selectedCategory} category.`}
+                </p>
+                {isSignedIn && (
+                  <div className="mt-6 flex justify-center">
+                    <button
+                      onClick={() => setShowCreatePoll(true)}
+                      className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-all"
+                    >
+                      Create Your First Poll
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
