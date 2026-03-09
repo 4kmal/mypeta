@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { UserProfileProvider } from "@/contexts/UserProfileContext";
 import { Toaster } from "@/components/ui/sonner";
+import { Analytics } from "@vercel/analytics/react";
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
@@ -30,6 +31,7 @@ export default function App({ Component, pageProps }: AppProps) {
             <DataProvider>
               <Component {...pageProps} />
               <Toaster />
+              <Analytics />
             </DataProvider>
           </UserProfileProvider>
         </LanguageProvider>
