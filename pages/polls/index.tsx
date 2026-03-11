@@ -1,10 +1,8 @@
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useState, useEffect, useRef } from 'react';
-import { useUser } from '@clerk/nextjs';
-import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useSupabase } from '@/contexts/SupabaseContext';
 import { Poll } from '@/data/polls';
-import { supabase } from '@/lib/supabase';
 import PageHeader from '@/components/PageHeader';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import Footer from '@/components/Footer';
@@ -81,19 +79,22 @@ const POLL_EMOJIS = [
 
 const PollsPage = () => {
   const router = useRouter();
-  const { user, isSignedIn } = useUser();
   const {
-    selectedState,
-    stats,
+    user,
+    profile,
+    isAuthenticated,
+    supabase,
     addPoints,
     addExp,
     addPointsAndExp,
     deductPoints,
     getLevel,
     getExpProgress,
-    internalUserId,
-    refreshUserData
-  } = useUserProfile();
+    refreshProfile,
+  } = useSupabase();
+  const isSignedIn = isAuthenticated;
+  const selectedState = profile?.selected_state ?? null;
+  const internalUserId = user?.id ?? null;
 
   // Translations
   const t = useTranslations({
@@ -436,7 +437,7 @@ const PollsPage = () => {
           p_option_id: optionData.id,
           p_option_index: optionIndex,
           p_user_state: selectedState,
-          p_clerk_user_id: user.id
+          p_user_id: user.id
         });
 
       if (error) {
@@ -479,7 +480,7 @@ const PollsPage = () => {
       // 5. Sync with server in background (don't await, no loading state)
       Promise.all([
         loadPollResults(false), // false = don't show loading skeleton
-        refreshUserData(),
+        refreshProfile(),
         loadUserVotes()
       ]).catch(err => console.error('Background sync error:', err));
 
@@ -658,7 +659,7 @@ const PollsPage = () => {
       return;
     }
 
-    if (!stats || stats.points < 200) {
+    if (!profile || profile!.points < 200) {
       toast.error('Insufficient points', {
         icon: <AlertCircle className="h-4 w-4" />,
         description: 'You need 200 points to create a poll',
@@ -703,7 +704,7 @@ const PollsPage = () => {
           p_description: newPoll.description.trim() || 'User-created poll',
           p_category: newPoll.category,
           p_options: options,
-          p_clerk_user_id: user.id,
+          p_user_id: user.id,
           p_end_date: newPoll.endDate ? new Date(newPoll.endDate).toISOString() : null
         });
 
@@ -733,7 +734,7 @@ const PollsPage = () => {
       // Reload polls and user data
       await Promise.all([
         loadPolls(),
-        refreshUserData()
+        refreshProfile()
       ]);
 
       // Reset form
@@ -1011,14 +1012,14 @@ const PollsPage = () => {
           </div>
 
           {/* User Stats Display */}
-          {isSignedIn && stats && (
+          {isSignedIn && profile && (
             <div className="mb-8 flex items-center justify-center gap-4 text-sm text-zinc-600 dark:text-zinc-400">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="flex items-center gap-1.5 hover:cursor-help">
                       <Coins className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
-                      <span>{stats.points} pts</span>
+                      <span>{profile!.points} pts</span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
@@ -1050,7 +1051,7 @@ const PollsPage = () => {
                   <TooltipTrigger asChild>
                     <div className="flex items-center gap-1.5 hover:cursor-help">
                       <Star className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
-                      <span>{stats.exp} EXP</span>
+                      <span>{profile!.exp} EXP</span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
@@ -1088,7 +1089,7 @@ const PollsPage = () => {
               <div className="mb-6 flex justify-center">
                 <button
                   onClick={() => {
-                    if (!stats || stats.points < 200) {
+                    if (!profile || profile!.points < 200) {
                       toast.error('Insufficient points', {
                         icon: <AlertCircle className="h-4 w-4" />,
                         description: 'You need 200 points to create a poll',
@@ -1097,14 +1098,14 @@ const PollsPage = () => {
                     }
                     setShowCreatePoll(true);
                   }}
-                  disabled={!stats || stats.points < 200}
-                  className={`cursor-pointer flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${!stats || stats.points < 200
+                  disabled={!profile || profile!.points < 200}
+                  className={`cursor-pointer flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${!profile || profile!.points < 200
                     ? 'bg-zinc-300 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 cursor-not-allowed'
                     : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl'
                     }`}
                 >
                   <Plus className="h-5 w-5" />
-                  {t.createPoll} {stats && stats.points < 200 && `(${t.needMorePoints} ${200 - stats.points} ${t.morePoints})`}
+                  {t.createPoll} {profile && profile!.points < 200 && `(${t.needMorePoints} ${200 - profile!.points} ${t.morePoints})`}
                 </button>
               </div>
 

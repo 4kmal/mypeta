@@ -1,6 +1,5 @@
 import Head from 'next/head';
-import { useUser } from '@clerk/nextjs';
-import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useSupabase } from '@/contexts/SupabaseContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import PageHeader from '@/components/PageHeader';
@@ -11,12 +10,11 @@ import ThemeToggleButton from '@/components/ThemeToggleButton';
 import { User, MapPin, Trophy, Star, LogIn, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/router';
-import { SignInButton } from '@clerk/nextjs';
 import { useState } from 'react';
 
 const ProfilePage = () => {
-  const { user, isSignedIn } = useUser();
-  const { selectedState, stats, getLevel, getExpProgress } = useUserProfile();
+  const { user, profile, isAuthenticated, getLevel, getExpProgress, openLoginModal } = useSupabase();
+  const selectedState = profile?.selected_state ?? null;
   const router = useRouter();
   const [showStatsDialog, setShowStatsDialog] = useState(false);
   const { language } = useLanguage();
@@ -80,7 +78,7 @@ const ProfilePage = () => {
   const stateDisplayName = getStateDisplayName(selectedState);
   const stateFlagId = getStateFlagPath(selectedState);
 
-  if (!isSignedIn) {
+  if (!isAuthenticated) {
     return (
       <>
         <Head>
@@ -103,12 +101,13 @@ const ProfilePage = () => {
                 <p className="text-zinc-600 dark:text-zinc-400 mb-6">
                   {signInToViewText}
                 </p>
-                <SignInButton mode="modal">
-                  <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
-                    <LogIn className="h-4 w-4 mr-2" />
-                    {signInText}
-                  </Button>
-                </SignInButton>
+                <Button
+                  onClick={openLoginModal}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  <LogIn className="h-4 w-4 mr-2" />
+                  {signInText}
+                </Button>
               </div>
             </div>
           </div>
@@ -142,7 +141,7 @@ const ProfilePage = () => {
             <div className="flex items-center gap-4 mb-6">
               <div className="relative">
                 <img
-                  src={user?.imageUrl || '/placeholder-avatar.png'}
+                  src={profile?.avatar_url || '/placeholder-avatar.png'}
                   alt="Profile"
                   className="w-20 h-20 rounded-full"
                 />
@@ -150,7 +149,7 @@ const ProfilePage = () => {
               </div>
               <div className="flex-1">
                 <h2 className="text-2xl font-bold text-zinc-800 dark:text-zinc-200">
-                  {user?.username || user?.firstName || 'User'}
+                  {profile?.username || user?.email?.split('@')[0] || 'User'}
                 </h2>
                 <p className="text-zinc-600 dark:text-zinc-400">
                   {levelText} {level}
@@ -183,7 +182,7 @@ const ProfilePage = () => {
                   <span className="text-sm text-zinc-600 dark:text-zinc-400">{pointsText}</span>
                 </div>
                 <p className="text-2xl font-bold text-zinc-800 dark:text-zinc-200">
-                  {stats?.points || 0}
+                  {profile?.points || 0}
                 </p>
               </div>
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-4 hover:shadow-md transition-shadow">
@@ -192,7 +191,7 @@ const ProfilePage = () => {
                   <span className="text-sm text-zinc-600 dark:text-zinc-400">{expText}</span>
                 </div>
                 <p className="text-2xl font-bold text-zinc-800 dark:text-zinc-200">
-                  {stats?.exp || 0}
+                  {profile?.exp || 0}
                 </p>
               </div>
             </button>
@@ -258,13 +257,13 @@ const ProfilePage = () => {
         </div>
 
         {/* Stats Info Dialog */}
-        {stats && (
+        {profile && (
           <UserStatsDialog
             open={showStatsDialog}
             onOpenChange={setShowStatsDialog}
-            points={stats.points}
+            points={profile.points}
             level={level}
-            exp={stats.exp}
+            exp={profile.exp}
           />
         )}
 

@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { states } from '@/data/states';
-import { useUserProfile } from '@/contexts/UserProfileContext';
+import { useSupabase } from '@/contexts/SupabaseContext';
 
 interface UserStateSelectorProps {
   isButton?: boolean;
@@ -36,7 +36,8 @@ const UserStateSelector: React.FC<UserStateSelectorProps> = ({
   externalOpen,
   onExternalOpenChange 
 }) => {
-  const { selectedState, setSelectedState, showStateSelector, setShowStateSelector } = useUserProfile();
+  const { profile, setSelectedState, showStateSelector, setShowStateSelector } = useSupabase();
+  const selectedState = profile?.selected_state ?? null;
   const [internalOpen, setInternalOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [tempSelectedState, setTempSelectedState] = useState<string | null>(selectedState);

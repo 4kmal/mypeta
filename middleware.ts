@@ -1,29 +1,9 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { updateSession } from '@/lib/supabase/middleware';
+import { type NextRequest } from 'next/server';
 
-// Define public routes that don't require authentication
-const isPublicRoute = createRouteMatcher([
-  '/',
-  '/about(.*)',
-  '/socials(.*)',
-  '/polls(.*)',
-  '/news(.*)',
-  '/profile(.*)',
-  '/privacy(.*)',
-  '/terms(.*)',
-  '/api/hello(.*)',
-  '/api/news(.*)',
-  '/sign-in(.*)',
-  '/sign-up(.*)',
-  '/auth(.*)',
-  '/debug-auth(.*)',
-]);
-
-export default clerkMiddleware(async (auth, request) => {
-  // Protect all routes except public ones
-  if (!isPublicRoute(request)) {
-    await auth.protect();
-  }
-});
+export default async function middleware(request: NextRequest) {
+  return await updateSession(request);
+}
 
 export const config = {
   matcher: [

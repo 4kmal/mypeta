@@ -1,4 +1,4 @@
-import { useUser, useAuth, useClerk } from "@clerk/nextjs";
+import { useSupabase } from "@/contexts/SupabaseContext";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, MapPin, Coins, Zap, Star } from "lucide-react";
 import React, { useState } from "react";
@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/tooltip";
 import UserStateSelector from "@/components/UserStateSelector";
 import UserStatsDialog from "@/components/UserStatsDialog";
-import { useUserProfile } from "@/contexts/UserProfileContext";
 import { states } from "@/data/states";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -36,14 +35,20 @@ const getFlagImagePath = (stateId: string): string => {
 };
 
 const AuthButton = () => {
-  const { user, isLoaded } = useUser();
-  const { isSignedIn } = useAuth();
-  const { signOut, openSignIn } = useClerk();
+  const {
+    user,
+    profile,
+    isLoading,
+    isAuthenticated,
+    signOut,
+    openLoginModal,
+    getLevel,
+  } = useSupabase();
+  const selectedState = profile?.selected_state ?? null;
   const router = useRouter();
   const [showProfile, setShowProfile] = useState(false);
   const [showStateSelectorDialog, setShowStateSelectorDialog] = useState(false);
   const [showStatsDialog, setShowStatsDialog] = useState(false);
-  const { selectedState, stats, getLevel } = useUserProfile();
   const [imageError, setImageError] = useState(false);
   const isMobile = useIsMobile();
 
@@ -52,14 +57,8 @@ const AuthButton = () => {
     setImageError(false);
   }, [selectedState]);
 
-  const handleLogin = async () => {
-    try {
-      await openSignIn({
-        redirectUrl: window.location.href,
-      });
-    } catch (error) {
-      console.error("Login failed:", error);
-    }
+  const handleLogin = () => {
+    openLoginModal();
   };
 
   const handleProfileClick = () => {
@@ -72,7 +71,7 @@ const AuthButton = () => {
     }
   };
 
-  if (!isLoaded) {
+  if (isLoading) {
     return (
       <Button variant="outline" size="sm" disabled className="gap-2">
         <div className="h-4 w-4 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
@@ -80,14 +79,13 @@ const AuthButton = () => {
     );
   }
 
-  if (isSignedIn && user) {
-    const profilePicture = user.imageUrl || null;
+  if (isAuthenticated && user) {
+    const profilePicture = profile?.avatar_url || null;
     const displayName =
-      user.username ||
-      user.firstName ||
-      user.emailAddresses[0]?.emailAddress?.split("@")[0] ||
+      profile?.username ||
+      user.email?.split("@")[0] ||
       "User";
-    const email = user.emailAddresses[0]?.emailAddress || null;
+    const email = user.email || null;
     const selectedStateData = states.find(
       (state) => state.id === selectedState
     );
@@ -138,7 +136,7 @@ const AuthButton = () => {
               </div>
 
               {/* Polls Stats */}
-              {stats && (
+              {profile && (
                 <>
                   {isMobile ? (
                     // On mobile, use clickable stats that open a dialog
@@ -148,7 +146,7 @@ const AuthButton = () => {
                     >
                       <div className="flex items-center gap-1.5">
                         <Coins className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
-                        <span>{stats.points} pts</span>
+                        <span>{profile.points} pts</span>
                       </div>
 
                       <span className="text-zinc-400/30 font-extrabold dark:text-zinc-500/30">
@@ -166,7 +164,7 @@ const AuthButton = () => {
 
                       <div className="flex items-center gap-1.5">
                         <Star className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
-                        <span>{stats.exp} EXP</span>
+                        <span>{profile.exp} EXP</span>
                       </div>
                     </button>
                   ) : (
@@ -177,7 +175,7 @@ const AuthButton = () => {
                           <TooltipTrigger asChild>
                             <div className="flex items-center gap-1.5 cursor-help">
                               <Coins className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
-                              <span>{stats.points} pts</span>
+                              <span>{profile.points} pts</span>
                             </div>
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
@@ -225,7 +223,7 @@ const AuthButton = () => {
                           <TooltipTrigger asChild>
                             <div className="flex items-center gap-1.5 cursor-help">
                               <Star className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
-                              <span>{stats.exp} EXP</span>
+                              <span>{profile.exp} EXP</span>
                             </div>
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
@@ -295,13 +293,13 @@ const AuthButton = () => {
         />
 
         {/* Stats Info Dialog for Mobile */}
-        {stats && (
+        {profile && (
           <UserStatsDialog
             open={showStatsDialog}
             onOpenChange={setShowStatsDialog}
-            points={stats.points}
+            points={profile.points}
             level={getLevel()}
-            exp={stats.exp}
+            exp={profile.exp}
           />
         )}
       </>

@@ -12,12 +12,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder-key',
-  {
-    auth: {
-      persistSession: false, // We're using Clerk for auth
-    },
-  }
+  supabaseAnonKey || 'placeholder-key'
 );
 
 // Type definitions for database
