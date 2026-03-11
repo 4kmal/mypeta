@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
-import { useUser } from "@clerk/nextjs";
-import { useUserProfile } from "@/contexts/UserProfileContext";
-import { supabase } from "@/lib/supabase";
+import { useSupabase } from "@/contexts/SupabaseContext";
 import Head from "next/head";
 
 export default function DebugAuth() {
-  const { user, isSignedIn, isLoaded } = useUser();
-  const { selectedState, stats, internalUserId } = useUserProfile();
+  const {
+    user,
+    session,
+    profile,
+    isAuthenticated,
+    isLoading,
+    supabase,
+    openLoginModal,
+    signOut,
+  } = useSupabase();
   const [testResults, setTestResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -27,129 +33,200 @@ export default function DebugAuth() {
     setLoading(true);
 
     try {
-      // Test 1: Clerk loaded
+      // Test 1: Supabase client initialized
       addResult(
-        "Clerk SDK",
-        isLoaded ? "pass" : "fail",
-        `Clerk SDK loaded: ${isLoaded}`
+        "Supabase Client",
+        supabase ? "pass" : "fail",
+        `Supabase client initialized: ${!!supabase}`
       );
 
-      // Test 2: User signed in
+      // Test 2: Auth loading complete
       addResult(
-        "Authentication",
-        isSignedIn ? "pass" : "fail",
-        `User signed in: ${isSignedIn}`
+        "Auth Loading",
+        !isLoading ? "pass" : "info",
+        `Auth loading complete: ${!isLoading}`
       );
 
-      if (!isSignedIn || !user) {
-        addResult("Tests", "info", "Please sign in to continue tests");
+      // Test 3: Session status
+      addResult(
+        "Session",
+        isAuthenticated ? "pass" : "info",
+        isAuthenticated
+          ? `Active session for ${user?.email}`
+          : "No active session"
+      );
+
+      if (!isAuthenticated || !user) {
+        addResult(
+          "Tests",
+          "info",
+          "Sign in to continue with authenticated tests"
+        );
         setLoading(false);
         return;
       }
 
-      // Test 3: User data
-      addResult("Clerk User", "info", `User ID: ${user.id}`, {
+      // Test 4: User data from auth
+      addResult("Auth User", "info", `User ID: ${user.id}`, {
         id: user.id,
-        username: user.username,
-        firstName: user.firstName,
-        email: user.emailAddresses[0]?.emailAddress,
-        imageUrl: user.imageUrl,
-        externalAccounts: user.externalAccounts?.length || 0,
+        email: user.email,
+        provider: user.app_metadata?.provider,
+        created_at: user.created_at,
       });
 
-      // Test 4: Supabase connection
-      try {
-        const { data: pingData, error: pingError } = await supabase
-          .from("users")
-          .select("count")
-          .limit(1);
-
+      // Test 5: Profile loaded
+      if (profile) {
+        addResult("Profile", "pass", "Profile loaded from profiles table", {
+          id: profile.id,
+          username: profile.username,
+          email: profile.email,
+          selected_state: profile.selected_state,
+          points: profile.points,
+          exp: profile.exp,
+          level: profile.level,
+          status: profile.status,
+        });
+      } else {
         addResult(
-          "Supabase Connection",
-          !pingError ? "pass" : "fail",
-          !pingError ? "Connected to Supabase" : `Error: ${pingError.message}`
+          "Profile",
+          "fail",
+          "Profile not found — DB trigger may not have fired yet"
         );
-      } catch (error: any) {
-        addResult("Supabase Connection", "fail", `Exception: ${error.message}`);
       }
 
-      // Test 5: get_or_create_user function
+      // Test 6: Supabase connection (direct query)
       try {
-        const username =
-          user.username ||
-          user.firstName ||
-          user.emailAddresses[0]?.emailAddress?.split("@")[0];
-        const email = user.emailAddresses[0]?.emailAddress;
-        const profilePicture = user.imageUrl;
+        const { data: pingData, error: pingError } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("id", user.id)
+          .single();
 
-        const { data: userData, error: userError } = await supabase.rpc(
-          "get_or_create_user",
+        addResult(
+          "Supabase Query",
+          !pingError ? "pass" : "fail",
+          !pingError
+            ? "Direct query to profiles table succeeded"
+            : `Error: ${pingError.message}`
+        );
+      } catch (error: any) {
+        addResult("Supabase Query", "fail", `Exception: ${error.message}`);
+      }
+
+      // Test 7: RLS policy check
+      try {
+        const { data, error: rlsError } = await supabase
+          .from("profiles")
+          .select("points, exp, level")
+          .eq("id", user.id)
+          .single();
+
+        if (rlsError) {
+          addResult("RLS Policy", "fail", `RLS error: ${rlsError.message}`);
+        } else {
+          addResult("RLS Policy", "pass", "Can read own profile via RLS", data);
+        }
+      } catch (error: any) {
+        addResult("RLS Policy", "fail", `Exception: ${error.message}`);
+      }
+
+      // Test 8: award_gamification RPC (dry run with 0 values)
+      try {
+        const { data, error: rpcError } = await supabase.rpc(
+          "award_gamification",
           {
-            p_clerk_user_id: user.id,
-            p_username: username,
-            p_email: email,
-            p_profile_picture_url: profilePicture,
+            p_user_id: user.id,
+            p_points: 0,
+            p_exp: 0,
+            p_reason: "debug_test",
           }
         );
 
-        if (userError) {
+        if (rpcError) {
           addResult(
-            "get_or_create_user",
+            "award_gamification RPC",
             "fail",
-            `Error: ${userError.message}`,
-            userError
+            `RPC error: ${rpcError.message}`
           );
-        } else if (!userData || userData.length === 0) {
-          addResult("get_or_create_user", "fail", "No data returned");
         } else {
           addResult(
-            "get_or_create_user",
+            "award_gamification RPC",
             "pass",
-            "User data retrieved",
-            userData[0]
+            "RPC callable (0-value test)",
+            data
           );
         }
       } catch (error: any) {
-        addResult("get_or_create_user", "fail", `Exception: ${error.message}`);
+        addResult(
+          "award_gamification RPC",
+          "fail",
+          `Exception: ${error.message}`
+        );
       }
 
-      // Test 6: UserProfileContext state
-      addResult(
-        "UserProfileContext",
-        internalUserId ? "pass" : "fail",
-        internalUserId
-          ? `Internal User ID: ${internalUserId}`
-          : "Internal User ID is null",
-        {
-          internalUserId,
-          selectedState,
-          stats,
-        }
-      );
-
-      // Test 7: Update state test (if user has selected a state)
-      if (selectedState) {
+      // Test 9: update_user_state_v2 RPC (re-set current state)
+      if (profile?.selected_state) {
         try {
           const { error: stateError } = await supabase.rpc(
-            "update_user_state",
+            "update_user_state_v2",
             {
-              p_state_id: selectedState,
-              p_clerk_user_id: user.id,
+              p_state_id: profile.selected_state,
             }
           );
 
           addResult(
-            "update_user_state",
+            "update_user_state_v2 RPC",
             !stateError ? "pass" : "fail",
             !stateError
-              ? `Successfully called with state: ${selectedState}`
+              ? `Successfully called with state: ${profile.selected_state}`
               : `Error: ${stateError.message}`
           );
         } catch (error: any) {
-          addResult("update_user_state", "fail", `Exception: ${error.message}`);
+          addResult(
+            "update_user_state_v2 RPC",
+            "fail",
+            `Exception: ${error.message}`
+          );
         }
       } else {
-        addResult("update_user_state", "info", "Skipped - no state selected");
+        addResult(
+          "update_user_state_v2 RPC",
+          "info",
+          "Skipped — no state selected"
+        );
+      }
+
+      // Test 10: Real-time subscription check
+      try {
+        const channel = supabase
+          .channel("debug-test")
+          .on(
+            "postgres_changes",
+            {
+              event: "UPDATE",
+              schema: "public",
+              table: "profiles",
+              filter: `id=eq.${user.id}`,
+            },
+            () => {}
+          )
+          .subscribe((status) => {
+            if (status === "SUBSCRIBED") {
+              addResult(
+                "Real-time",
+                "pass",
+                "Real-time subscription active"
+              );
+              supabase.removeChannel(channel);
+            }
+          });
+
+        // Timeout fallback
+        setTimeout(() => {
+          supabase.removeChannel(channel);
+        }, 5000);
+      } catch (error: any) {
+        addResult("Real-time", "fail", `Exception: ${error.message}`);
       }
     } catch (error: any) {
       addResult("Test Suite", "fail", `Fatal error: ${error.message}`);
@@ -159,21 +236,21 @@ export default function DebugAuth() {
   };
 
   useEffect(() => {
-    if (isLoaded) {
+    if (!isLoading) {
       runTests();
     }
-  }, [isLoaded, isSignedIn, user?.id, internalUserId, selectedState]);
+  }, [isLoading, isAuthenticated, user?.id, profile?.id]);
 
   const getStatusEmoji = (status: string) => {
     switch (status) {
       case "pass":
-        return "✅";
+        return "\u2705";
       case "fail":
-        return "❌";
+        return "\u274C";
       case "info":
-        return "ℹ️";
+        return "\u2139\uFE0F";
       default:
-        return "❓";
+        return "\u2753";
     }
   };
 
@@ -200,10 +277,10 @@ export default function DebugAuth() {
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">
-              🔍 Authentication Debug Page
+              Authentication Debug Page
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
-              This page tests all authentication and database connections
+              Tests Supabase Auth, profiles table, RLS policies, and RPCs
             </p>
           </div>
 
@@ -215,6 +292,21 @@ export default function DebugAuth() {
             >
               {loading ? "Running Tests..." : "Run Tests Again"}
             </button>
+            {!isAuthenticated ? (
+              <button
+                onClick={openLoginModal}
+                className="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium"
+              >
+                Sign In
+              </button>
+            ) : (
+              <button
+                onClick={() => signOut()}
+                className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
+              >
+                Sign Out
+              </button>
+            )}
             <button
               onClick={() => window.location.reload()}
               className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
@@ -225,7 +317,7 @@ export default function DebugAuth() {
 
           {testResults.length === 0 && !loading && (
             <div className="text-center text-gray-500 dark:text-gray-400 py-12">
-              Click "Run Tests Again" to start diagnostics
+              Click &quot;Run Tests Again&quot; to start diagnostics
             </div>
           )}
 
@@ -233,12 +325,13 @@ export default function DebugAuth() {
             {testResults.map((result, index) => (
               <div
                 key={index}
-                className={`p-4 rounded-lg border-2 ${result.status === "pass"
-                  ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
-                  : result.status === "fail"
-                    ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
-                    : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
-                  }`}
+                className={`p-4 rounded-lg border-2 ${
+                  result.status === "pass"
+                    ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                    : result.status === "fail"
+                      ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+                      : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+                }`}
               >
                 <div className="flex items-start gap-3">
                   <span className="text-2xl">
@@ -246,9 +339,7 @@ export default function DebugAuth() {
                   </span>
                   <div className="flex-1">
                     <h3
-                      className={`font-bold text-lg mb-1 ${getStatusColor(
-                        result.status
-                      )}`}
+                      className={`font-bold text-lg mb-1 ${getStatusColor(result.status)}`}
                     >
                       {result.test}
                     </h3>
@@ -273,28 +364,28 @@ export default function DebugAuth() {
 
           <div className="mt-8 p-6 bg-gray-100 dark:bg-gray-800 rounded-lg">
             <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
-              📊 Current State
+              Current State
             </h2>
             <div className="space-y-2 text-sm">
               <div className="flex gap-2">
                 <span className="font-semibold text-gray-700 dark:text-gray-300">
-                  Clerk Loaded:
+                  Auth Provider:
                 </span>
                 <span className="text-gray-600 dark:text-gray-400">
-                  {isLoaded ? "Yes" : "No"}
+                  Supabase Auth
                 </span>
               </div>
               <div className="flex gap-2">
                 <span className="font-semibold text-gray-700 dark:text-gray-300">
-                  Signed In:
+                  Authenticated:
                 </span>
                 <span className="text-gray-600 dark:text-gray-400">
-                  {isSignedIn ? "Yes" : "No"}
+                  {isAuthenticated ? "Yes" : "No"}
                 </span>
               </div>
               <div className="flex gap-2">
                 <span className="font-semibold text-gray-700 dark:text-gray-300">
-                  Clerk User ID:
+                  User ID:
                 </span>
                 <span className="text-gray-600 dark:text-gray-400 font-mono text-xs">
                   {user?.id || "null"}
@@ -302,10 +393,18 @@ export default function DebugAuth() {
               </div>
               <div className="flex gap-2">
                 <span className="font-semibold text-gray-700 dark:text-gray-300">
-                  Internal User ID:
+                  Email:
                 </span>
-                <span className="text-gray-600 dark:text-gray-400 font-mono text-xs">
-                  {internalUserId || "null"}
+                <span className="text-gray-600 dark:text-gray-400">
+                  {user?.email || "null"}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <span className="font-semibold text-gray-700 dark:text-gray-300">
+                  Provider:
+                </span>
+                <span className="text-gray-600 dark:text-gray-400">
+                  {user?.app_metadata?.provider || "null"}
                 </span>
               </div>
               <div className="flex gap-2">
@@ -313,7 +412,7 @@ export default function DebugAuth() {
                   Selected State:
                 </span>
                 <span className="text-gray-600 dark:text-gray-400">
-                  {selectedState || "null"}
+                  {profile?.selected_state || "null"}
                 </span>
               </div>
               <div className="flex gap-2">
@@ -321,7 +420,7 @@ export default function DebugAuth() {
                   Points:
                 </span>
                 <span className="text-gray-600 dark:text-gray-400">
-                  {stats?.points ?? "null"}
+                  {profile?.points ?? "null"}
                 </span>
               </div>
               <div className="flex gap-2">
@@ -329,7 +428,15 @@ export default function DebugAuth() {
                   EXP:
                 </span>
                 <span className="text-gray-600 dark:text-gray-400">
-                  {stats?.exp ?? "null"}
+                  {profile?.exp ?? "null"}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <span className="font-semibold text-gray-700 dark:text-gray-300">
+                  Level:
+                </span>
+                <span className="text-gray-600 dark:text-gray-400">
+                  {profile?.level ?? "null"}
                 </span>
               </div>
             </div>
@@ -340,7 +447,7 @@ export default function DebugAuth() {
               href="/"
               className="text-blue-600 dark:text-blue-400 hover:underline"
             >
-              ← Back to Home
+              &larr; Back to Home
             </a>
           </div>
         </div>

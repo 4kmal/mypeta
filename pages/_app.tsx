@@ -5,8 +5,9 @@ import { DataProvider } from "@/contexts/DataContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { UserProfileProvider } from "@/contexts/UserProfileContext";
+import { SupabaseProvider } from "@/contexts/SupabaseContext";
+import LoginModal from "@/components/LoginModal";
 import { Toaster } from "@/components/ui/sonner";
-import { Analytics } from "@vercel/analytics/react";
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
@@ -25,17 +26,19 @@ export default function App({ Component, pageProps }: AppProps) {
         },
       }}
     >
-      <ThemeProvider>
-        <LanguageProvider>
-          <UserProfileProvider>
-            <DataProvider>
-              <Component {...pageProps} />
-              <Toaster />
-              <Analytics />
-            </DataProvider>
-          </UserProfileProvider>
-        </LanguageProvider>
-      </ThemeProvider>
+      <SupabaseProvider>
+        <ThemeProvider>
+          <LanguageProvider>
+            <UserProfileProvider>
+              <DataProvider>
+                <Component {...pageProps} />
+                <LoginModal />
+                <Toaster />
+              </DataProvider>
+            </UserProfileProvider>
+          </LanguageProvider>
+        </ThemeProvider>
+      </SupabaseProvider>
     </ClerkProvider>
   );
 }
