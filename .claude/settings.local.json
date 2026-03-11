@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
+      "Bash(xargs grep -l \"updateSession\\\\|NextRequest\\\\|NextResponse\")",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npm run build)",
+      "Bash(rm -rf node_modules/.cache)",
+      "Bash(npm install @supabase/supabase-js@latest @supabase/ssr@latest)",
+      "Bash(node -e \"require\\(''@supabase/supabase-js''\\); console.log\\(''supabase-js OK''\\)\")",
+      "Bash(node -e \"require\\(''@supabase/ssr''\\); console.log\\(''ssr OK''\\)\")"
+    ]
+  }
+}
