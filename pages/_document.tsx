@@ -4,6 +4,14 @@ export default function Document() {
   return (
     <Html lang="en">
       <Head>
+        {/* React Grab — development only */}
+        {process.env.NODE_ENV === "development" && (
+          <script
+            src="//unpkg.com/react-grab/dist/index.global.js"
+            crossOrigin="anonymous"
+          />
+        )}
+
         {/* Primary Meta Tags */}
         <meta name="title" content="My Peta - Malaysia Data Visualization" />
         <meta name="description" content="Explore interactive data visualization for Malaysian states including population, income, crime, water consumption, and household expenditure. Get insights into state-level statistics across Malaysia." />

@@ -8,7 +8,8 @@
       "Bash(rm -rf node_modules/.cache)",
       "Bash(npm install @supabase/supabase-js@latest @supabase/ssr@latest)",
       "Bash(node -e \"require\\(''@supabase/supabase-js''\\); console.log\\(''supabase-js OK''\\)\")",
-      "Bash(node -e \"require\\(''@supabase/ssr''\\); console.log\\(''ssr OK''\\)\")"
+      "Bash(node -e \"require\\(''@supabase/ssr''\\); console.log\\(''ssr OK''\\)\")",
+      "Bash(npm install react-grab@latest)"
     ]
   }
 }

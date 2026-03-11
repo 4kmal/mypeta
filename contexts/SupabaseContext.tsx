@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
 } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { User, Session, SupabaseClient } from "@supabase/supabase-js";
@@ -141,39 +142,64 @@ export const SupabaseProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // ── Initialize session ─────────────────────────────────────────────────
 
+  const lastUserId = useRef<string | null>(null);
+
   useEffect(() => {
-    const initSession = async () => {
-      const {
-        data: { session: initialSession },
-      } = await supabase.auth.getSession();
+    // Safety timeout — if INITIAL_SESSION never fires, unblock the UI
+    const safetyTimer = setTimeout(() => {
+      setIsLoading((prev) => {
+        if (prev) console.warn("[SupabaseContext] Safety timeout: forcing isLoading=false");
+        return false;
+      });
+    }, 5000);
 
-      if (initialSession?.user) {
-        setSession(initialSession);
-        setUser(initialSession.user);
-        await fetchProfile(initialSession.user.id);
-      }
-      setIsLoading(false);
-    };
-
-    initSession();
-
-    // Listen for auth changes
+    // Use onAuthStateChange as the single source of truth.
+    // INITIAL_SESSION fires immediately with the current session,
+    // so there's no need for a separate getSession() call.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      const newUserId = newSession?.user?.id ?? null;
+      const previousUserId = lastUserId.current;
+
+      // Always update session/user state
       setSession(newSession);
       setUser(newSession?.user ?? null);
 
-      if (event === "SIGNED_IN" && newSession?.user) {
-        await fetchProfile(newSession.user.id);
+      if (event === "INITIAL_SESSION") {
+        clearTimeout(safetyTimer);
+        try {
+          if (newSession?.user) {
+            lastUserId.current = newSession.user.id;
+            await fetchProfile(newSession.user.id);
+          }
+        } catch (err) {
+          console.error("[SupabaseContext] Error during INITIAL_SESSION:", err);
+        } finally {
+          setIsLoading(false);
+        }
+      } else if (event === "SIGNED_IN" && newUserId && newUserId !== previousUserId) {
+        // New sign-in (not a token refresh disguised as SIGNED_IN)
+        lastUserId.current = newUserId;
+        try {
+          await fetchProfile(newSession!.user.id);
+        } catch (err) {
+          console.error("[SupabaseContext] Error fetching profile on SIGNED_IN:", err);
+        }
         setIsLoginModalOpen(false);
+        setIsLoading(false);
       } else if (event === "SIGNED_OUT") {
+        lastUserId.current = null;
         setProfile(null);
         setShowStateSelector(false);
       }
+      // TOKEN_REFRESHED — session/user already updated above, no extra work needed
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(safetyTimer);
+      subscription.unsubscribe();
+    };
   }, [supabase, fetchProfile]);
 
   // ── Real-time profile subscription ─────────────────────────────────────

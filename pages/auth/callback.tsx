@@ -1,17 +1,35 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { createClient } from "@/lib/supabase/client";
 
 export default function AuthCallback() {
   const router = useRouter();
+  const handled = useRef(false);
 
   useEffect(() => {
+    if (!router.isReady || handled.current) return;
+    handled.current = true;
+
     const supabase = createClient();
 
     const handleCallback = async () => {
-      const { error } = await supabase.auth.exchangeCodeForSession(
-        window.location.href
-      );
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get("code");
+
+      // For hash-fragment flow (implicit grant), the Supabase client
+      // auto-detects tokens in the URL hash on creation. Just wait
+      // briefly for the session to be established, then redirect.
+      if (!code) {
+        // Give the client a moment to process any hash fragment
+        const { data: { session } } = await supabase.auth.getSession();
+        const next = url.searchParams.get("next") || "/";
+        const safeNext = next.startsWith("/") ? next : "/";
+        router.replace(safeNext);
+        return;
+      }
+
+      // PKCE / code flow
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
 
       if (error) {
         console.error("[AuthCallback] Error:", error);
@@ -21,18 +39,13 @@ export default function AuthCallback() {
         return;
       }
 
-      // Redirect to the `next` param or home
-      const next = (router.query.next as string) || "/";
-      // Prevent open redirect
+      const next = url.searchParams.get("next") || "/";
       const safeNext = next.startsWith("/") ? next : "/";
       router.replace(safeNext);
     };
 
-    // Only run when the URL has the code parameter
-    if (router.isReady) {
-      handleCallback();
-    }
-  }, [router, router.isReady]);
+    handleCallback();
+  }, [router.isReady]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-100 dark:bg-[#111114]">
